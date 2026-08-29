@@ -79,6 +79,10 @@ func writeRelocs(wr *elfobj.Writer, b *elfobj.SectionBuilder, s *obj.Section, sy
 				Notes:    []string{"AArch64 ELF has no relocation for this kind"},
 			}
 		}
+		if want := r.Kind.Size(); want != r.Size {
+			return fmt.Errorf("elf: %s+%#x: %s reference to %q is a %d-byte field; %v writes %d",
+				s.Name(), r.Offset, r.Kind, r.Sym, r.Size, r.Kind, want)
+		}
 
 		sym, ok := syms[r.Sym]
 		if !ok {
