@@ -103,6 +103,7 @@ func (s *Section) SubsShifted64(rd, rn, rm reg.X, shift ...ShiftOp) {
 var (
 	addExt32  = form("AddExt32")
 	addExt64  = form("AddExt64")
+	subExt64  = form("SubExt64")
 	subsExt64 = form("SubsExt64")
 )
 
@@ -116,6 +117,14 @@ func (s *Section) AddExt32(rd, rn RegSP32, rm reg.W, ext ...ExtendOp) {
 // refused by name at the call if it holds anything else.
 func (s *Section) AddExt64(rd, rn RegSP64, rm any, ext ...ExtendOp) {
 	s.inst(addExt64, append([]any{rd, rn, rm}, opt(ext)...)...)
+}
+
+// SubExt64 emits SUB Xd|SP, Xn|SP, Rm{, extend}. The shifted-register form
+// reads register 31 as ZR, so this is the only SUB that can write SP or read
+// it — which is what moving the stack pointer by a value rather than a
+// literal needs.
+func (s *Section) SubExt64(rd, rn RegSP64, rm any, ext ...ExtendOp) {
+	s.inst(subExt64, append([]any{rd, rn, rm}, opt(ext)...)...)
 }
 
 // SubsExt64 emits SUBS Xd, Xn|SP, Rm{, extend}, setting NZCV. Cmp on an

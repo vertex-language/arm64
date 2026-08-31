@@ -71,6 +71,9 @@ func init() {
 		L("add", 0x8b200000, 0xffe00000).
 			Dst(ClassXsp, Rd).Src(ClassXsp, Rn).Src(ClassX, Rm).Opt(ClassExtend, Opt, 3).
 			Name("AddExt64"),
+		L("sub", 0xcb200000, 0xffe00000).
+			Dst(ClassXsp, Rd).Src(ClassXsp, Rn).Src(ClassX, Rm).Opt(ClassExtend, Opt, 3).
+			Name("SubExt64"),
 		L("subs", 0xeb200000, 0xffe00000).
 			Dst(ClassX, Rd).Src(ClassXsp, Rn).Src(ClassX, Rm).Opt(ClassExtend, Opt, 3).
 			Flags().Name("SubsExt64"),
