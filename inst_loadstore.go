@@ -104,3 +104,27 @@ func (s *Section) LdrLit32(rt reg.W, target Label) { s.inst(ldrLit32, rt, target
 
 // LdrLit64 emits LDR Xt, target.
 func (s *Section) LdrLit64(rt reg.X, target Label) { s.inst(ldrLit64, rt, target) }
+
+// ---- Sign-extending sub-width loads ----------------------------------------
+//
+// One instruction rather than a load and a widen: the sign extension is the
+// mnemonic, and the destination's width says how far.
+
+var (
+	ldrsbImm32 = form("LdrsbImm32")
+	ldrsbImm64 = form("LdrsbImm64")
+	ldrshImm32 = form("LdrshImm32")
+	ldrshImm64 = form("LdrshImm64")
+)
+
+// LdrsbImm32 emits LDRSB Wt, [Xn|SP{, #imm}]: a byte, sign-extended to 32 bits.
+func (s *Section) LdrsbImm32(rt reg.W, m Mem) { s.inst(ldrsbImm32, rt, m) }
+
+// LdrsbImm64 emits LDRSB Xt, [Xn|SP{, #imm}], sign-extended to 64.
+func (s *Section) LdrsbImm64(rt reg.X, m Mem) { s.inst(ldrsbImm64, rt, m) }
+
+// LdrshImm32 emits LDRSH Wt, [Xn|SP{, #imm}].
+func (s *Section) LdrshImm32(rt reg.W, m Mem) { s.inst(ldrshImm32, rt, m) }
+
+// LdrshImm64 emits LDRSH Xt, [Xn|SP{, #imm}].
+func (s *Section) LdrshImm64(rt reg.X, m Mem) { s.inst(ldrshImm64, rt, m) }

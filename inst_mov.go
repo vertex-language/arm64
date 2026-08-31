@@ -70,6 +70,7 @@ var (
 	movReg64  = form("MovReg64")
 	movReg32  = form("MovReg32")
 	movSp64   = form("MovSp64")
+	movWide32 = form("MovWide32")
 	movWide64 = form("MovWide64")
 )
 
@@ -88,3 +89,6 @@ func (s *Section) MovSp64(rd, rn RegSP64) { s.inst(movSp64, rd, rn) }
 // MovWide64 emits MOV Xd, #imm — MOVZ, preferred unless imm is zero and
 // shifted, which is not a move of anything.
 func (s *Section) MovWide64(rd reg.X, imm uint64) { s.inst(movWide64, rd, imm) }
+
+// MovWide32 emits MOV Wd, #imm — MOVZ, the 32-bit half of MovWide64.
+func (s *Section) MovWide32(rd reg.W, imm uint64) { s.inst(movWide32, rd, imm) }

@@ -271,6 +271,15 @@ func diffCases() []diffCase {
 		{"casal x0,x2,[x1]", "casal x0, x2, [x1]", func(t *arm64.Section) { t.Casal64(x0, x2, arm64.Mem64(x1)) }},
 		{"casalb w0,w2,[x1]", "casalb w0, w2, [x1]", func(t *arm64.Section) { t.Casalb(w0, w2, arm64.Mem8(x1)) }},
 		{"casalh w0,w2,[x1]", "casalh w0, w2, [x1]", func(t *arm64.Section) { t.Casalh(w0, w2, arm64.Mem16(x1)) }},
+
+		{"mul w0,w1,w2", "mul w0, w1, w2", func(t *arm64.Section) { t.Mul32(w0, w1, w2) }},
+		{"mov w0,#100", "mov w0, #100", func(t *arm64.Section) { t.MovWide32(w0, 100) }},
+		{"orn w0,w1,w2", "orn w0, w1, w2", func(t *arm64.Section) { t.OrnShifted32(w0, w1, w2) }},
+		{"orn x0,x1,x2", "orn x0, x1, x2", func(t *arm64.Section) { t.OrnShifted64(x0, x1, x2) }},
+		{"ldrsb w0,[x1,4]", "ldrsb w0, [x1, #4]", func(t *arm64.Section) { t.LdrsbImm32(w0, arm64.Mem8(x1).Off(4)) }},
+		{"ldrsb x0,[x1,4]", "ldrsb x0, [x1, #4]", func(t *arm64.Section) { t.LdrsbImm64(x0, arm64.Mem8(x1).Off(4)) }},
+		{"ldrsh w0,[x1,4]", "ldrsh w0, [x1, #4]", func(t *arm64.Section) { t.LdrshImm32(w0, arm64.Mem16(x1).Off(4)) }},
+		{"ldrsh x0,[x1,4]", "ldrsh x0, [x1, #4]", func(t *arm64.Section) { t.LdrshImm64(x0, arm64.Mem16(x1).Off(4)) }},
 	}
 }
 

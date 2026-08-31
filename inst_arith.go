@@ -156,6 +156,7 @@ func (s *Section) NegShifted64(rd, rm reg.X, shift ...ShiftOp) {
 // ---- Widening multiply -----------------------------------------------------
 
 var (
+	mul32 = form("Mul32")
 	smulh = form("Smulh")
 	umulh = form("Umulh")
 )
@@ -166,3 +167,6 @@ func (s *Section) Smulh(rd, rn, rm reg.X) { s.inst(smulh, rd, rn, rm) }
 
 // Umulh emits UMULH Xd, Xn, Xm, the unsigned half.
 func (s *Section) Umulh(rd, rn, rm reg.X) { s.inst(umulh, rd, rn, rm) }
+
+// Mul32 emits MUL Wd, Wn, Wm, which is MADD with the zero register.
+func (s *Section) Mul32(rd, rn, rm reg.W) { s.inst(mul32, rd, rn, rm) }

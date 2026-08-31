@@ -105,3 +105,21 @@ func (s *Section) TstShifted64(rn, rm reg.X, shift ...ShiftOp) {
 
 // TstImm64 emits TST Xn, #imm — ANDS (immediate) with the result discarded.
 func (s *Section) TstImm64(rn reg.X, imm uint64) { s.inst(tstImm64, rn, imm) }
+
+// ---- ORN -------------------------------------------------------------------
+
+var (
+	ornShifted32 = form("OrnShifted32")
+	ornShifted64 = form("OrnShifted64")
+)
+
+// OrnShifted32 emits ORN Wd, Wn, Wm{, shift}: Wn OR NOT Wm. With WZR as Wn it
+// is the bitwise complement, which is what MVN aliases.
+func (s *Section) OrnShifted32(rd, rn, rm reg.W, shift ...ShiftOp) {
+	s.inst(ornShifted32, append([]any{rd, rn, rm}, opt(shift)...)...)
+}
+
+// OrnShifted64 emits ORN Xd, Xn, Xm{, shift}.
+func (s *Section) OrnShifted64(rd, rn, rm reg.X, shift ...ShiftOp) {
+	s.inst(ornShifted64, append([]any{rd, rn, rm}, opt(shift)...)...)
+}

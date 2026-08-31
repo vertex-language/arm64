@@ -240,6 +240,13 @@ func init() {
 		// ---- Data processing, one source ----
 		L("rbit", 0x5ac00000, 0x7ffffc00).Dst(ClassW, Rd).Src(ClassW, Rn).Name("Rbit32"),
 		L("rbit", 0xdac00000, 0xfffffc00).Dst(ClassX, Rd).Src(ClassX, Rn).Name("Rbit64"),
+		L("orn", 0x2a200000, 0x7f200000).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Opt(ClassShift, Shift, 0).
+			Name("OrnShifted32"),
+		L("orn", 0xaa200000, 0xff200000).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Opt(ClassShift, Shift, 0).
+			Name("OrnShifted64"),
+
 		L("rev16", 0x5ac00400, 0x7ffffc00).Dst(ClassW, Rd).Src(ClassW, Rn).Name("Rev16_32"),
 		L("rev16", 0xdac00400, 0xfffffc00).Dst(ClassX, Rd).Src(ClassX, Rn).Name("Rev16_64"),
 		L("rev", 0x5ac00800, 0x7ffffc00).Dst(ClassW, Rd).Src(ClassW, Rn).Name("Rev32"),
@@ -284,6 +291,14 @@ func init() {
 			Src(ClassX, Rt).Mem(64, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("StrImm64"),
 		L("ldr", 0xf9400000, 0xffc00000).
 			Dst(ClassX, Rt).Mem(64, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrImm64"),
+		L("ldrsb", 0x39c00000, 0xffc00000).
+			Dst(ClassW, Rt).Mem(8, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrsbImm32"),
+		L("ldrsb", 0x39800000, 0xffc00000).
+			Dst(ClassX, Rt).Mem(8, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrsbImm64"),
+		L("ldrsh", 0x79c00000, 0xffc00000).
+			Dst(ClassW, Rt).Mem(16, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrshImm32"),
+		L("ldrsh", 0x79800000, 0xffc00000).
+			Dst(ClassX, Rt).Mem(16, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrshImm64"),
 		L("ldrsw", 0xb9800000, 0xffc00000).
 			Dst(ClassX, Rt).Mem(32, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrswImm"),
 
@@ -395,6 +410,12 @@ func init() {
 
 		// MOV (wide immediate) is MOVZ, preferred unless the immediate is zero
 		// and shifted — movz x0, #0, lsl #16 is not a move of anything.
+		L("mov", 0x52800000, 0x7f800000).
+			Dst(ClassW, Rd).Imm(Imm16).Kind(ImmMoveWide).
+			AliasOf("movz").
+			PreferredWhen(func(w uint32) bool {
+				return !(Imm16.Get(w) == 0 && Hw.Get(w) != 0)
+			}).Name("MovWide32"),
 		L("mov", 0xd2800000, 0xff800000).
 			Dst(ClassX, Rd).Imm(Imm16).Kind(ImmMoveWide).
 			AliasOf("movz").
@@ -417,6 +438,9 @@ func init() {
 		L("cset", 0x9a9f07e0, 0xffff0fe0).
 			Dst(ClassX, Rd).Cnd(CondHi).
 			AliasOf("csinc").Pins(Rn, 31).Pins(Rm, 31).Name("Cset64"),
+		L("mul", 0x1b007c00, 0x7fe0fc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
+			AliasOf("madd").Pins(Ra, 31).Name("Mul32"),
 		L("mul", 0x9b007c00, 0xffe0fc00).
 			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).
 			AliasOf("madd").Pins(Ra, 31).Name("Mul64"),
