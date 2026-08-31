@@ -30,6 +30,13 @@ type Section struct {
 	// placement order, until resolve folds or promotes each one at Finalize.
 	pending []pending
 
+	// deltas holds the label differences LabelDelta left behind. Kept
+	// apart from pending because a difference names two labels and a
+	// fixup names one, and because it is not a relocation candidate: a
+	// distance between two offsets in one section is a constant whatever
+	// the section's load address turns out to be.
+	deltas []labelDelta
+
 	// dead marks the spent handle. Every call on it returns immediately.
 	dead bool
 }
@@ -41,6 +48,13 @@ type Section struct {
 type pending struct {
 	fx   encode.Fixup
 	mnem string
+}
+
+// labelDelta is one four-byte hole holding the distance from one label in
+// this section to another.
+type labelDelta struct {
+	at       int
+	from, to string
 }
 
 func (s *Section) Kind() SectionKind { return s.kind }
@@ -249,6 +263,23 @@ func (s *Section) LabelRef(name string) {
 	s.buf = append(s.buf, make([]byte, 8)...)
 }
 
+// LabelDelta places a four-byte hole patched at Finalize with the signed
+// distance from `from` to `to`, both labels in this section.
+//
+// No relocation, and none possible: the difference between two offsets in one
+// section is the same number wherever the section loads, which is what makes
+// a table of these position-independent where a table of addresses is not. A
+// jump table is the reason it exists — Mach-O will not accept an absolute
+// pointer into text from a read-only section in a position-independent image,
+// and a table of distances needs no such pointer.
+func (s *Section) LabelDelta(from, to string) {
+	if !s.ok() {
+		return
+	}
+	s.deltas = append(s.deltas, labelDelta{at: len(s.buf), from: from, to: to})
+	s.buf = append(s.buf, make([]byte, 4)...)
+}
+
 // ---- Finalize machinery -----------------------------------------------------
 
 // resolve runs at Finalize: same-section direct references fold into the
@@ -270,6 +301,27 @@ func (s *Section) resolve() error {
 		}
 	}
 	s.pending = nil
+
+	for _, d := range s.deltas {
+		from, ok := s.labels[d.from]
+		if !ok {
+			return s.errorAt(obj.ErrUndefined,
+				"label delta: "+d.from+" is not defined in "+s.name)
+		}
+		to, ok := s.labels[d.to]
+		if !ok {
+			return s.errorAt(obj.ErrUndefined,
+				"label delta: "+d.to+" is not defined in "+s.name)
+		}
+		v := int64(to) - int64(from)
+		if !fitsSigned(v, 32) {
+			return s.errorAt(obj.ErrRange,
+				"label delta: "+d.from+" to "+d.to,
+				"distance "+decimal(v)+" does not fit 32 signed bits")
+		}
+		binary.LittleEndian.PutUint32(s.buf[d.at:], uint32(int32(v)))
+	}
+	s.deltas = nil
 	return nil
 }
 
