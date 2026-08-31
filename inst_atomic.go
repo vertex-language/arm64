@@ -68,6 +68,13 @@ func (s *Section) Stlxr64(rs reg.W, rt reg.X, m Mem) { s.inst(stlxr64, rs, rt, m
 func (s *Section) Stlxrb(rs, rt reg.W, m Mem)        { s.inst(stlxrb, rs, rt, m) }
 func (s *Section) Stlxrh(rs, rt reg.W, m Mem)        { s.inst(stlxrh, rs, rt, m) }
 
+var clrex = form("Clrex")
+
+// Clrex emits CLREX: clears this processor's exclusive monitor. The failure
+// path of a compare-and-swap loop, which took a reservation with LDXR and then
+// did not store.
+func (s *Section) Clrex() { s.inst(clrex) }
+
 // ---- LSE -------------------------------------------------------------------
 //
 // One instruction for what the exclusive loop does, and one the loop cannot be

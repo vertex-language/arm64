@@ -122,6 +122,7 @@ func diffCases() []diffCase {
 		{"dsb sy", "dsb sy", func(t *arm64.Section) { t.Dsb(arm64.SY) }},
 		{"dmb ish", "dmb ish", func(t *arm64.Section) { t.Dmb(arm64.ISH) }},
 		{"isb", "isb", func(t *arm64.Section) { t.Isb() }},
+		{"clrex", "clrex", func(t *arm64.Section) { t.Clrex() }},
 		{"mrs x0,nzcv", "mrs x0, nzcv", func(t *arm64.Section) { t.Mrs(x0, arm64.NZCV) }},
 		{"msr nzcv,x0", "msr nzcv, x0", func(t *arm64.Section) { t.MsrReg(arm64.NZCV, x0) }},
 		{"tst x0,x1", "tst x0, x1", func(t *arm64.Section) { t.TstShifted64(x0, x1) }},

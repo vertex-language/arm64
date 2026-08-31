@@ -37,6 +37,17 @@ func init() {
 		L("stlr", 0xc89ffc00, 0xfffffc00).
 			Src(ClassX, Rt).Mem(64, Rn, Field{}).Name("Stlr64"),
 
+		// CLREX clears this processor's exclusive monitor without
+		// storing. It is what a compare-and-swap's failure path owes
+		// the monitor it took: the loop skips its STXR, and nothing
+		// else would consume the reservation until the next LDXR.
+		//
+		// No operand. CLREX takes a CRm field that clang defaults to
+		// 15 and every real emitter leaves there; the other values are
+		// reserved, so this row is the one spelling that means
+		// anything.
+		L("clrex", 0xd5033f5f, 0xffffffff).Name("Clrex"),
+
 		// ---- Load and store exclusive ----
 		//
 		// STXR's first destination is the status register: zero if the store
