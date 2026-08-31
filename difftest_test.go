@@ -42,6 +42,9 @@ type diffCase struct {
 func diffCases() []diffCase {
 	x0, x1, x2, x3 := arm64.X0, arm64.X1, arm64.X2, arm64.X3
 	w0, w1, w2, w3 := arm64.W0, arm64.W1, arm64.W2, arm64.W3
+	s0, s1, s2, s3 := arm64.S0, arm64.S1, arm64.S2, arm64.S3
+	d0, d1, d2, d3 := arm64.D0, arm64.D1, arm64.D2, arm64.D3
+	q0 := arm64.Q0
 	return []diffCase{
 		{"add x0,x1,x2", "add x0, x1, x2", func(t *arm64.Section) { t.AddShifted64(x0, x1, x2) }},
 		{"add w0,w1,w2,lsl3", "add w0, w1, w2, lsl #3", func(t *arm64.Section) {
@@ -137,6 +140,92 @@ func diffCases() []diffCase {
 		{"add sp,x1,x2", "add sp, x1, x2", func(t *arm64.Section) {
 			t.AddExt64(arm64.SP, x1, x2, arm64.Extended(arm64.ExtLSL, 0))
 		}},
+		{"smulh x0,x1,x2", "smulh x0, x1, x2", func(t *arm64.Section) { t.Smulh(x0, x1, x2) }},
+		{"umulh x0,x1,x2", "umulh x0, x1, x2", func(t *arm64.Section) { t.Umulh(x0, x1, x2) }},
+
+		// ---- Scalar floating point ----
+		{"fadd s0,s1,s2", "fadd s0, s1, s2", func(t *arm64.Section) { t.FaddS(s0, s1, s2) }},
+		{"fadd d0,d1,d2", "fadd d0, d1, d2", func(t *arm64.Section) { t.FaddD(d0, d1, d2) }},
+		{"fsub s0,s1,s2", "fsub s0, s1, s2", func(t *arm64.Section) { t.FsubS(s0, s1, s2) }},
+		{"fsub d0,d1,d2", "fsub d0, d1, d2", func(t *arm64.Section) { t.FsubD(d0, d1, d2) }},
+		{"fmul s0,s1,s2", "fmul s0, s1, s2", func(t *arm64.Section) { t.FmulS(s0, s1, s2) }},
+		{"fmul d0,d1,d2", "fmul d0, d1, d2", func(t *arm64.Section) { t.FmulD(d0, d1, d2) }},
+		{"fdiv s0,s1,s2", "fdiv s0, s1, s2", func(t *arm64.Section) { t.FdivS(s0, s1, s2) }},
+		{"fdiv d0,d1,d2", "fdiv d0, d1, d2", func(t *arm64.Section) { t.FdivD(d0, d1, d2) }},
+		{"fmax s0,s1,s2", "fmax s0, s1, s2", func(t *arm64.Section) { t.FmaxS(s0, s1, s2) }},
+		{"fmax d0,d1,d2", "fmax d0, d1, d2", func(t *arm64.Section) { t.FmaxD(d0, d1, d2) }},
+		{"fmin s0,s1,s2", "fmin s0, s1, s2", func(t *arm64.Section) { t.FminS(s0, s1, s2) }},
+		{"fmin d0,d1,d2", "fmin d0, d1, d2", func(t *arm64.Section) { t.FminD(d0, d1, d2) }},
+		{"fmaxnm s0,s1,s2", "fmaxnm s0, s1, s2", func(t *arm64.Section) { t.FmaxnmS(s0, s1, s2) }},
+		{"fmaxnm d0,d1,d2", "fmaxnm d0, d1, d2", func(t *arm64.Section) { t.FmaxnmD(d0, d1, d2) }},
+		{"fminnm s0,s1,s2", "fminnm s0, s1, s2", func(t *arm64.Section) { t.FminnmS(s0, s1, s2) }},
+		{"fminnm d0,d1,d2", "fminnm d0, d1, d2", func(t *arm64.Section) { t.FminnmD(d0, d1, d2) }},
+
+		{"fmov s0,s1", "fmov s0, s1", func(t *arm64.Section) { t.FmovS(s0, s1) }},
+		{"fmov d0,d1", "fmov d0, d1", func(t *arm64.Section) { t.FmovD(d0, d1) }},
+		{"fabs s0,s1", "fabs s0, s1", func(t *arm64.Section) { t.FabsS(s0, s1) }},
+		{"fabs d0,d1", "fabs d0, d1", func(t *arm64.Section) { t.FabsD(d0, d1) }},
+		{"fneg s0,s1", "fneg s0, s1", func(t *arm64.Section) { t.FnegS(s0, s1) }},
+		{"fneg d0,d1", "fneg d0, d1", func(t *arm64.Section) { t.FnegD(d0, d1) }},
+		{"fsqrt s0,s1", "fsqrt s0, s1", func(t *arm64.Section) { t.FsqrtS(s0, s1) }},
+		{"fsqrt d0,d1", "fsqrt d0, d1", func(t *arm64.Section) { t.FsqrtD(d0, d1) }},
+		{"frintn s0,s1", "frintn s0, s1", func(t *arm64.Section) { t.FrintnS(s0, s1) }},
+		{"frintn d0,d1", "frintn d0, d1", func(t *arm64.Section) { t.FrintnD(d0, d1) }},
+		{"frintp s0,s1", "frintp s0, s1", func(t *arm64.Section) { t.FrintpS(s0, s1) }},
+		{"frintp d0,d1", "frintp d0, d1", func(t *arm64.Section) { t.FrintpD(d0, d1) }},
+		{"frintm s0,s1", "frintm s0, s1", func(t *arm64.Section) { t.FrintmS(s0, s1) }},
+		{"frintm d0,d1", "frintm d0, d1", func(t *arm64.Section) { t.FrintmD(d0, d1) }},
+		{"frintz s0,s1", "frintz s0, s1", func(t *arm64.Section) { t.FrintzS(s0, s1) }},
+		{"frintz d0,d1", "frintz d0, d1", func(t *arm64.Section) { t.FrintzD(d0, d1) }},
+
+		{"fcvt d0,s1", "fcvt d0, s1", func(t *arm64.Section) { t.FcvtSToD(d0, s1) }},
+		{"fcvt s0,d1", "fcvt s0, d1", func(t *arm64.Section) { t.FcvtDToS(s0, d1) }},
+
+		{"fmadd s0,s1,s2,s3", "fmadd s0, s1, s2, s3", func(t *arm64.Section) { t.FmaddS(s0, s1, s2, s3) }},
+		{"fmadd d0,d1,d2,d3", "fmadd d0, d1, d2, d3", func(t *arm64.Section) { t.FmaddD(d0, d1, d2, d3) }},
+		{"fmsub s0,s1,s2,s3", "fmsub s0, s1, s2, s3", func(t *arm64.Section) { t.FmsubS(s0, s1, s2, s3) }},
+		{"fmsub d0,d1,d2,d3", "fmsub d0, d1, d2, d3", func(t *arm64.Section) { t.FmsubD(d0, d1, d2, d3) }},
+
+		{"fcmp s0,s1", "fcmp s0, s1", func(t *arm64.Section) { t.FcmpS(s0, s1) }},
+		{"fcmp d0,d1", "fcmp d0, d1", func(t *arm64.Section) { t.FcmpD(d0, d1) }},
+		{"fcmp s0,#0.0", "fcmp s0, #0.0", func(t *arm64.Section) { t.FcmpZeroS(s0) }},
+		{"fcmp d0,#0.0", "fcmp d0, #0.0", func(t *arm64.Section) { t.FcmpZeroD(d0) }},
+		{"fcsel s0,s1,s2,eq", "fcsel s0, s1, s2, eq", func(t *arm64.Section) { t.FcselS(s0, s1, s2, arm64.EQ) }},
+		{"fcsel d0,d1,d2,mi", "fcsel d0, d1, d2, mi", func(t *arm64.Section) { t.FcselD(d0, d1, d2, arm64.MI) }},
+
+		{"scvtf s0,w1", "scvtf s0, w1", func(t *arm64.Section) { t.ScvtfWToS(s0, w1) }},
+		{"scvtf d0,w1", "scvtf d0, w1", func(t *arm64.Section) { t.ScvtfWToD(d0, w1) }},
+		{"scvtf s0,x1", "scvtf s0, x1", func(t *arm64.Section) { t.ScvtfXToS(s0, x1) }},
+		{"scvtf d0,x1", "scvtf d0, x1", func(t *arm64.Section) { t.ScvtfXToD(d0, x1) }},
+		{"ucvtf s0,w1", "ucvtf s0, w1", func(t *arm64.Section) { t.UcvtfWToS(s0, w1) }},
+		{"ucvtf d0,w1", "ucvtf d0, w1", func(t *arm64.Section) { t.UcvtfWToD(d0, w1) }},
+		{"ucvtf s0,x1", "ucvtf s0, x1", func(t *arm64.Section) { t.UcvtfXToS(s0, x1) }},
+		{"ucvtf d0,x1", "ucvtf d0, x1", func(t *arm64.Section) { t.UcvtfXToD(d0, x1) }},
+
+		{"fcvtzs w0,s1", "fcvtzs w0, s1", func(t *arm64.Section) { t.FcvtzsSToW(w0, s1) }},
+		{"fcvtzs w0,d1", "fcvtzs w0, d1", func(t *arm64.Section) { t.FcvtzsDToW(w0, d1) }},
+		{"fcvtzs x0,s1", "fcvtzs x0, s1", func(t *arm64.Section) { t.FcvtzsSToX(x0, s1) }},
+		{"fcvtzs x0,d1", "fcvtzs x0, d1", func(t *arm64.Section) { t.FcvtzsDToX(x0, d1) }},
+		{"fcvtzu w0,s1", "fcvtzu w0, s1", func(t *arm64.Section) { t.FcvtzuSToW(w0, s1) }},
+		{"fcvtzu w0,d1", "fcvtzu w0, d1", func(t *arm64.Section) { t.FcvtzuDToW(w0, d1) }},
+		{"fcvtzu x0,s1", "fcvtzu x0, s1", func(t *arm64.Section) { t.FcvtzuSToX(x0, s1) }},
+		{"fcvtzu x0,d1", "fcvtzu x0, d1", func(t *arm64.Section) { t.FcvtzuDToX(x0, d1) }},
+
+		{"fmov w0,s1", "fmov w0, s1", func(t *arm64.Section) { t.FmovSToW(w0, s1) }},
+		{"fmov s0,w1", "fmov s0, w1", func(t *arm64.Section) { t.FmovWToS(s0, w1) }},
+		{"fmov x0,d1", "fmov x0, d1", func(t *arm64.Section) { t.FmovDToX(x0, d1) }},
+		{"fmov d0,x1", "fmov d0, x1", func(t *arm64.Section) { t.FmovXToD(d0, x1) }},
+
+		{"ldr s0,[x1,16]", "ldr s0, [x1, #16]", func(t *arm64.Section) { t.LdrImmS(s0, arm64.Mem32(x1).Off(16)) }},
+		{"ldr d0,[x1,16]", "ldr d0, [x1, #16]", func(t *arm64.Section) { t.LdrImmD(d0, arm64.Mem64(x1).Off(16)) }},
+		{"ldr q0,[x1,16]", "ldr q0, [x1, #16]", func(t *arm64.Section) { t.LdrImmQ(q0, arm64.Mem128(x1).Off(16)) }},
+		{"str s0,[x1,16]", "str s0, [x1, #16]", func(t *arm64.Section) { t.StrImmS(s0, arm64.Mem32(x1).Off(16)) }},
+		{"str d0,[x1,16]", "str d0, [x1, #16]", func(t *arm64.Section) { t.StrImmD(d0, arm64.Mem64(x1).Off(16)) }},
+		{"str q0,[x1,16]", "str q0, [x1, #16]", func(t *arm64.Section) { t.StrImmQ(q0, arm64.Mem128(x1).Off(16)) }},
+		{"ldur s0,[x1,-4]", "ldur s0, [x1, #-4]", func(t *arm64.Section) { t.LdurImmS(s0, arm64.Mem32(x1).Off(-4)) }},
+		{"ldur d0,[x1,-4]", "ldur d0, [x1, #-4]", func(t *arm64.Section) { t.LdurImmD(d0, arm64.Mem64(x1).Off(-4)) }},
+		{"stur s0,[x1,-4]", "stur s0, [x1, #-4]", func(t *arm64.Section) { t.SturImmS(s0, arm64.Mem32(x1).Off(-4)) }},
+		{"stur d0,[x1,-4]", "stur d0, [x1, #-4]", func(t *arm64.Section) { t.SturImmD(d0, arm64.Mem64(x1).Off(-4)) }},
 	}
 }
 

@@ -3,6 +3,7 @@ package isa
 import (
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/vertex-language/arm64/feature"
 )
@@ -24,13 +25,23 @@ func register(forms ...*Form) {
 }
 
 // checkTable runs the cross-form checks that a single form cannot make about
-// itself. It runs once, after every table file has registered.
+// itself, once, on first use of the table.
+//
+// On first use and not at the end of some table file's init: Go orders init
+// functions within a package by file name, so a table file sorting after
+// whichever one called this would register its forms afterwards and never
+// reach byHelper. That is a bug that grows quietly with the next table added,
+// and sync.Once is what makes the ordering stop mattering.
 //
 // The check that matters is ambiguity. Two forms of one mnemonic with the same
 // operand signature would make Resolve's answer depend on declaration order,
 // which is exactly the arbitrary tiebreak this architecture does not need and
 // this package refuses to have.
-func checkTable() {
+var tableOnce sync.Once
+
+func checkTable() { tableOnce.Do(buildTable) }
+
+func buildTable() {
 	seen := map[string]*Form{}
 	for _, f := range all {
 		sig := f.Signature()
@@ -59,7 +70,10 @@ func checkTable() {
 // It is what binds a typed helper to its row: root/inst_*.go calls this once
 // per helper, at package init, so a removed or renamed row fails the build
 // loudly by name instead of the helper silently binding to nothing.
-func ByHelper(name string) *Form { return byHelper[name] }
+func ByHelper(name string) *Form {
+	checkTable()
+	return byHelper[name]
+}
 
 // All returns every form in the table, in declaration order.
 func All() []*Form { return all }

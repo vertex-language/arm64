@@ -210,6 +210,15 @@ func init() {
 		L("msub", 0x9b008000, 0xffe08000).
 			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Src(ClassX, Ra).Name("Msub64"),
 
+		// The high half of a 64x64 product, which no MADD can reach: the
+		// multiply is 64x64 into 64 everywhere else, and this is the other
+		// half of it. Ra is fixed to the zero register in the encoding rather
+		// than being an operand, so there is no addend form to alias from.
+		L("smulh", 0x9b407c00, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Name("Smulh"),
+		L("umulh", 0x9bc07c00, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Name("Umulh"),
+
 		// ---- Conditional select and compare ----
 		L("csel", 0x1a800000, 0x7fe00c00).
 			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Cnd(CondHi).Name("Csel32"),
@@ -417,5 +426,4 @@ func init() {
 		L(".inst", 0, 0).Imm(F(0, 32)).Name("Inst"),
 	)
 
-	checkTable()
 }

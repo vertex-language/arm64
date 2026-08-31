@@ -152,3 +152,17 @@ func (s *Section) CmnShifted64(rn, rm reg.X, shift ...ShiftOp) {
 func (s *Section) NegShifted64(rd, rm reg.X, shift ...ShiftOp) {
 	s.inst(negShifted64, append([]any{rd, rm}, opt(shift)...)...)
 }
+
+// ---- Widening multiply -----------------------------------------------------
+
+var (
+	smulh = form("Smulh")
+	umulh = form("Umulh")
+)
+
+// Smulh emits SMULH Xd, Xn, Xm: the high 64 bits of the signed product, which
+// MUL throws away and no MADD form can reach.
+func (s *Section) Smulh(rd, rn, rm reg.X) { s.inst(smulh, rd, rn, rm) }
+
+// Umulh emits UMULH Xd, Xn, Xm, the unsigned half.
+func (s *Section) Umulh(rd, rn, rm reg.X) { s.inst(umulh, rd, rn, rm) }
