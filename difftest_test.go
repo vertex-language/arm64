@@ -226,6 +226,51 @@ func diffCases() []diffCase {
 		{"ldur d0,[x1,-4]", "ldur d0, [x1, #-4]", func(t *arm64.Section) { t.LdurImmD(d0, arm64.Mem64(x1).Off(-4)) }},
 		{"stur s0,[x1,-4]", "stur s0, [x1, #-4]", func(t *arm64.Section) { t.SturImmS(s0, arm64.Mem32(x1).Off(-4)) }},
 		{"stur d0,[x1,-4]", "stur d0, [x1, #-4]", func(t *arm64.Section) { t.SturImmD(d0, arm64.Mem64(x1).Off(-4)) }},
+
+		// ---- Atomics ----
+		{"ldar w0,[x1]", "ldar w0, [x1]", func(t *arm64.Section) { t.Ldar32(w0, arm64.Mem32(x1)) }},
+		{"ldar x0,[x1]", "ldar x0, [x1]", func(t *arm64.Section) { t.Ldar64(x0, arm64.Mem64(x1)) }},
+		{"ldarb w0,[x1]", "ldarb w0, [x1]", func(t *arm64.Section) { t.Ldarb(w0, arm64.Mem8(x1)) }},
+		{"ldarh w0,[x1]", "ldarh w0, [x1]", func(t *arm64.Section) { t.Ldarh(w0, arm64.Mem16(x1)) }},
+		{"stlr w0,[x1]", "stlr w0, [x1]", func(t *arm64.Section) { t.Stlr32(w0, arm64.Mem32(x1)) }},
+		{"stlr x0,[x1]", "stlr x0, [x1]", func(t *arm64.Section) { t.Stlr64(x0, arm64.Mem64(x1)) }},
+		{"stlrb w0,[x1]", "stlrb w0, [x1]", func(t *arm64.Section) { t.Stlrb(w0, arm64.Mem8(x1)) }},
+		{"stlrh w0,[x1]", "stlrh w0, [x1]", func(t *arm64.Section) { t.Stlrh(w0, arm64.Mem16(x1)) }},
+
+		{"ldxr w0,[x1]", "ldxr w0, [x1]", func(t *arm64.Section) { t.Ldxr32(w0, arm64.Mem32(x1)) }},
+		{"ldxr x0,[x1]", "ldxr x0, [x1]", func(t *arm64.Section) { t.Ldxr64(x0, arm64.Mem64(x1)) }},
+		{"ldxrb w0,[x1]", "ldxrb w0, [x1]", func(t *arm64.Section) { t.Ldxrb(w0, arm64.Mem8(x1)) }},
+		{"ldxrh w0,[x1]", "ldxrh w0, [x1]", func(t *arm64.Section) { t.Ldxrh(w0, arm64.Mem16(x1)) }},
+		{"ldaxr w0,[x1]", "ldaxr w0, [x1]", func(t *arm64.Section) { t.Ldaxr32(w0, arm64.Mem32(x1)) }},
+		{"ldaxr x0,[x1]", "ldaxr x0, [x1]", func(t *arm64.Section) { t.Ldaxr64(x0, arm64.Mem64(x1)) }},
+		{"ldaxrb w0,[x1]", "ldaxrb w0, [x1]", func(t *arm64.Section) { t.Ldaxrb(w0, arm64.Mem8(x1)) }},
+		{"ldaxrh w0,[x1]", "ldaxrh w0, [x1]", func(t *arm64.Section) { t.Ldaxrh(w0, arm64.Mem16(x1)) }},
+
+		{"stxr w2,w0,[x1]", "stxr w2, w0, [x1]", func(t *arm64.Section) { t.Stxr32(w2, w0, arm64.Mem32(x1)) }},
+		{"stxr w2,x0,[x1]", "stxr w2, x0, [x1]", func(t *arm64.Section) { t.Stxr64(w2, x0, arm64.Mem64(x1)) }},
+		{"stxrb w2,w0,[x1]", "stxrb w2, w0, [x1]", func(t *arm64.Section) { t.Stxrb(w2, w0, arm64.Mem8(x1)) }},
+		{"stxrh w2,w0,[x1]", "stxrh w2, w0, [x1]", func(t *arm64.Section) { t.Stxrh(w2, w0, arm64.Mem16(x1)) }},
+		{"stlxr w2,w0,[x1]", "stlxr w2, w0, [x1]", func(t *arm64.Section) { t.Stlxr32(w2, w0, arm64.Mem32(x1)) }},
+		{"stlxr w2,x0,[x1]", "stlxr w2, x0, [x1]", func(t *arm64.Section) { t.Stlxr64(w2, x0, arm64.Mem64(x1)) }},
+		{"stlxrb w2,w0,[x1]", "stlxrb w2, w0, [x1]", func(t *arm64.Section) { t.Stlxrb(w2, w0, arm64.Mem8(x1)) }},
+		{"stlxrh w2,w0,[x1]", "stlxrh w2, w0, [x1]", func(t *arm64.Section) { t.Stlxrh(w2, w0, arm64.Mem16(x1)) }},
+
+		{"ldaddal w0,w2,[x1]", "ldaddal w0, w2, [x1]", func(t *arm64.Section) { t.Ldaddal32(w0, w2, arm64.Mem32(x1)) }},
+		{"ldaddal x0,x2,[x1]", "ldaddal x0, x2, [x1]", func(t *arm64.Section) { t.Ldaddal64(x0, x2, arm64.Mem64(x1)) }},
+		{"ldaddalb w0,w2,[x1]", "ldaddalb w0, w2, [x1]", func(t *arm64.Section) { t.Ldaddalb(w0, w2, arm64.Mem8(x1)) }},
+		{"ldaddalh w0,w2,[x1]", "ldaddalh w0, w2, [x1]", func(t *arm64.Section) { t.Ldaddalh(w0, w2, arm64.Mem16(x1)) }},
+		{"ldclral w0,w2,[x1]", "ldclral w0, w2, [x1]", func(t *arm64.Section) { t.Ldclral32(w0, w2, arm64.Mem32(x1)) }},
+		{"ldclral x0,x2,[x1]", "ldclral x0, x2, [x1]", func(t *arm64.Section) { t.Ldclral64(x0, x2, arm64.Mem64(x1)) }},
+		{"ldeoral w0,w2,[x1]", "ldeoral w0, w2, [x1]", func(t *arm64.Section) { t.Ldeoral32(w0, w2, arm64.Mem32(x1)) }},
+		{"ldeoral x0,x2,[x1]", "ldeoral x0, x2, [x1]", func(t *arm64.Section) { t.Ldeoral64(x0, x2, arm64.Mem64(x1)) }},
+		{"ldsetal w0,w2,[x1]", "ldsetal w0, w2, [x1]", func(t *arm64.Section) { t.Ldsetal32(w0, w2, arm64.Mem32(x1)) }},
+		{"ldsetal x0,x2,[x1]", "ldsetal x0, x2, [x1]", func(t *arm64.Section) { t.Ldsetal64(x0, x2, arm64.Mem64(x1)) }},
+		{"swpal w0,w2,[x1]", "swpal w0, w2, [x1]", func(t *arm64.Section) { t.Swpal32(w0, w2, arm64.Mem32(x1)) }},
+		{"swpal x0,x2,[x1]", "swpal x0, x2, [x1]", func(t *arm64.Section) { t.Swpal64(x0, x2, arm64.Mem64(x1)) }},
+		{"casal w0,w2,[x1]", "casal w0, w2, [x1]", func(t *arm64.Section) { t.Casal32(w0, w2, arm64.Mem32(x1)) }},
+		{"casal x0,x2,[x1]", "casal x0, x2, [x1]", func(t *arm64.Section) { t.Casal64(x0, x2, arm64.Mem64(x1)) }},
+		{"casalb w0,w2,[x1]", "casalb w0, w2, [x1]", func(t *arm64.Section) { t.Casalb(w0, w2, arm64.Mem8(x1)) }},
+		{"casalh w0,w2,[x1]", "casalh w0, w2, [x1]", func(t *arm64.Section) { t.Casalh(w0, w2, arm64.Mem16(x1)) }},
 	}
 }
 
@@ -239,7 +284,12 @@ func TestDifferentialAgainstClang(t *testing.T) {
 
 	// Assemble every case's line as one source file, in order, so the .text
 	// offsets line up one-to-one with the typed-helper words emitted below.
+	// The LSE atomics are Armv8.1-A, so the reference assembler is told
+	// which architecture it is assembling for rather than being handed
+	// instructions it will refuse. The typed-helper side is told the same
+	// thing through the module's feature set, below.
 	var src strings.Builder
+	src.WriteString(".arch armv8.1-a\n")
 	for _, c := range cases {
 		src.WriteString(c.asm)
 		src.WriteByte('\n')
@@ -267,7 +317,7 @@ func TestDifferentialAgainstClang(t *testing.T) {
 		t.Fatalf("clang produced %d words for %d cases; a source line assembled to something other than one instruction", len(want), len(cases))
 	}
 
-	m := arm64.NewModule()
+	m := arm64.NewModule(arm64.WithFeatures(arm64.Armv8_1A.Set()))
 	m.Extern("memcpy")
 	sec := m.Section(arm64.Text)
 	for _, c := range cases {
