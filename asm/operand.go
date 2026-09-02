@@ -6,7 +6,7 @@ import (
 
 	"github.com/vertex-language/arm64/operand"
 	"github.com/vertex-language/arm64/reg"
-	"github.com/vertex-language/gas"
+	"github.com/vertex-language/asm/gas"
 )
 
 // parseOperand reads one comma-separated operand and returns it in whatever

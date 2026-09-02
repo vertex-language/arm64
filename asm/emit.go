@@ -6,7 +6,7 @@ import (
 
 	"github.com/vertex-language/arm64"
 	"github.com/vertex-language/arm64/obj"
-	"github.com/vertex-language/gas"
+	"github.com/vertex-language/asm/gas"
 )
 
 // emitter adapts a Module to gas.Emitter.

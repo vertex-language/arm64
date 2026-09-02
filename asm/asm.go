@@ -7,7 +7,7 @@ import (
 	"github.com/vertex-language/arm64/obj"
 	"github.com/vertex-language/arm64/operand"
 	"github.com/vertex-language/arm64/reg"
-	"github.com/vertex-language/gas"
+	"github.com/vertex-language/asm/gas"
 )
 
 // target is the gas.Target half: the dialect, and everything after a mnemonic.
