@@ -158,3 +158,61 @@ func (s *Section) RorImm32(rd, rs reg.W, shift uint8) { s.inst(rorImm32, rd, rs,
 
 // RorImm64 emits ROR Xd, Xs, #shift.
 func (s *Section) RorImm64(rd, rs reg.X, shift uint8) { s.inst(rorImm64, rd, rs, uint64(shift)) }
+
+// ---- Aliases: bitfield insert ----------------------------------------------
+//
+// The other direction from extract: a field is placed *at* a position rather
+// than taken *from* one, so immr rotates the source into place and imms is
+// the width alone. BFXIL is the odd one — it extracts, like UBFX, but into
+// the low bits of a destination it leaves otherwise intact, which is why it
+// aliases BFM and not UBFM.
+
+var (
+	bfi32   = form("Bfi32")
+	bfi64   = form("Bfi64")
+	bfxil32 = form("Bfxil32")
+	bfxil64 = form("Bfxil64")
+	ubfiz32 = form("Ubfiz32")
+	ubfiz64 = form("Ubfiz64")
+	sbfiz32 = form("Sbfiz32")
+	sbfiz64 = form("Sbfiz64")
+)
+
+// Bfi64 emits BFI Xd, Xn, #lsb, #width: the low width bits of Xn placed at
+// lsb in Xd, leaving the rest of Xd alone.
+func (s *Section) Bfi32(rd, rn reg.W, lsb, width uint8) {
+	s.inst(bfi32, rd, rn, uint64(lsb), uint64(width))
+}
+
+func (s *Section) Bfi64(rd, rn reg.X, lsb, width uint8) {
+	s.inst(bfi64, rd, rn, uint64(lsb), uint64(width))
+}
+
+// Bfxil64 emits BFXIL Xd, Xn, #lsb, #width: the field at lsb in Xn copied
+// into the low bits of Xd, leaving the rest of Xd alone.
+func (s *Section) Bfxil32(rd, rn reg.W, lsb, width uint8) {
+	s.inst(bfxil32, rd, rn, uint64(lsb), uint64(width))
+}
+
+func (s *Section) Bfxil64(rd, rn reg.X, lsb, width uint8) {
+	s.inst(bfxil64, rd, rn, uint64(lsb), uint64(width))
+}
+
+// Ubfiz64 emits UBFIZ Xd, Xn, #lsb, #width: the low width bits of Xn placed
+// at lsb, zeroing everything else — a shift and a mask in one instruction.
+func (s *Section) Ubfiz32(rd, rn reg.W, lsb, width uint8) {
+	s.inst(ubfiz32, rd, rn, uint64(lsb), uint64(width))
+}
+
+func (s *Section) Ubfiz64(rd, rn reg.X, lsb, width uint8) {
+	s.inst(ubfiz64, rd, rn, uint64(lsb), uint64(width))
+}
+
+// Sbfiz64 is the same, sign-extending above the field.
+func (s *Section) Sbfiz32(rd, rn reg.W, lsb, width uint8) {
+	s.inst(sbfiz32, rd, rn, uint64(lsb), uint64(width))
+}
+
+func (s *Section) Sbfiz64(rd, rn reg.X, lsb, width uint8) {
+	s.inst(sbfiz64, rd, rn, uint64(lsb), uint64(width))
+}

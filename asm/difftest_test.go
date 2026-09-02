@@ -99,6 +99,51 @@ var lines = []string{
 	"ror w7, w8, #3",
 	"ror x0, x1, #5",
 
+	// Add and subtract with carry, and the negate aliases built on them.
+	"adc x0, x1, x2",
+	"adc w0, w1, w2",
+	"adcs x0, x1, x2",
+	"sbc x0, x1, x2",
+	"sbc w0, w1, w2",
+	"sbcs x0, x1, x2",
+	"ngc x0, x1",
+	"ngcs x0, x1",
+	"negs x0, x1",
+	"negs w0, w1",
+
+	// Widening multiply: W sources, an X destination.
+	"smull x0, w1, w2",
+	"umull x0, w1, w2",
+	"smaddl x0, w1, w2, x3",
+	"umaddl x0, w1, w2, x3",
+	"smsubl x0, w1, w2, x3",
+	"umsubl x0, w1, w2, x3",
+	"smnegl x0, w1, w2",
+
+	// The conditional aliases, which name one source twice and invert
+	// their condition.
+	"cinc x0, x1, ne",
+	"cinv x0, x1, ne",
+	"cneg x0, x1, ne",
+	"csetm x0, ne",
+	"csetm w0, ne",
+	"cset w0, ne",
+
+	// Bitfield insert, the other direction from extract.
+	"bfi x0, x1, #4, #8",
+	"bfi w0, w1, #4, #8",
+	"bfxil x0, x1, #4, #8",
+	"ubfiz x0, x1, #4, #8",
+	"sbfiz w0, w1, #4, #8",
+
+	// The hint space, and the exception return.
+	"hint #0x14",
+	"paciasp",
+	"autiasp",
+	"eret",
+	"rev64 x0, x1",
+	"rev32 x0, x1",
+
 	// Multiply and divide.
 	"mul x0, x1, x2",
 	"madd x0, x1, x2, x3",

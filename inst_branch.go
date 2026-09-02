@@ -25,6 +25,7 @@ var (
 	br     = form("Br")
 	blr    = form("Blr")
 	ret    = form("Ret")
+	eret   = form("Eret")
 )
 
 // B emits B target: an unconditional branch, +/-128MiB.
@@ -65,6 +66,10 @@ func (s *Section) Tbz32(rt reg.W, bit uint8, target TargetOp) {
 func (s *Section) Tbnz32(rt reg.W, bit uint8, target TargetOp) {
 	s.inst(tbnz32, rt, uint64(bit), target)
 }
+
+// Eret emits ERET: a return from an exception, which takes no operand
+// because the address it returns to is in ELR_ELn and not in a register.
+func (s *Section) Eret() { s.inst(eret) }
 
 // Br emits BR Xn: an unconditional branch to a register, no relocation
 // possible or needed.

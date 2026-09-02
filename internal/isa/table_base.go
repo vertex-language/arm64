@@ -223,6 +223,43 @@ func init() {
 			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Name("Umulh"),
 
 		// ---- Conditional select and compare ----
+		// ---- Add and subtract with carry ----
+		//
+		// The instruction a multiword addition is made of, and absent until
+		// an assembler asked for it: nothing here selects one, because this
+		// IR's integers fit a register and its overflow predicates are
+		// computed rather than carried.
+		L("adc", 0x1a000000, 0x7fe0fc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Name("Adc32"),
+		L("adc", 0x9a000000, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Name("Adc64"),
+		L("adcs", 0x3a000000, 0x7fe0fc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Flags().Name("Adcs32"),
+		L("adcs", 0xba000000, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Flags().Name("Adcs64"),
+		L("sbc", 0x5a000000, 0x7fe0fc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Name("Sbc32"),
+		L("sbc", 0xda000000, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Name("Sbc64"),
+		L("sbcs", 0x7a000000, 0x7fe0fc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Flags().Name("Sbcs32"),
+		L("sbcs", 0xfa000000, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Flags().Name("Sbcs64"),
+
+		// ---- Widening multiply ----
+		//
+		// A 32-bit multiply with a 64-bit result, which is the one shape
+		// this architecture cannot express by choosing register widths: the
+		// sources are W and the destination and accumulator are X.
+		L("smaddl", 0x9b200000, 0xffe08000).
+			Dst(ClassX, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Src(ClassX, Ra).Name("Smaddl"),
+		L("umaddl", 0x9ba00000, 0xffe08000).
+			Dst(ClassX, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Src(ClassX, Ra).Name("Umaddl"),
+		L("smsubl", 0x9b208000, 0xffe08000).
+			Dst(ClassX, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Src(ClassX, Ra).Name("Smsubl"),
+		L("umsubl", 0x9ba08000, 0xffe08000).
+			Dst(ClassX, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Src(ClassX, Ra).Name("Umsubl"),
+
 		// ---- Conditional compare ----
 		//
 		// A compare that happens only if the condition holds, and writes the
@@ -286,6 +323,14 @@ func init() {
 		L("rev16", 0xdac00400, 0xfffffc00).Dst(ClassX, Rd).Src(ClassX, Rn).Name("Rev16_64"),
 		L("rev", 0x5ac00800, 0x7ffffc00).Dst(ClassW, Rd).Src(ClassW, Rn).Name("Rev32"),
 		L("rev", 0xdac00c00, 0xfffffc00).Dst(ClassX, Rd).Src(ClassX, Rn).Name("Rev64"),
+		// REV64 is the same word under the name the ARM ARM prefers when
+		// the register is an X; REV32 on an X register is a different
+		// instruction, reversing the bytes within each word rather than
+		// across the whole of it.
+		L("rev64", 0xdac00c00, 0xfffffc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).AliasOf("rev").Name("Rev64Alias"),
+		L("rev32", 0xdac00800, 0xfffffc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Name("Rev32In64"),
 		L("clz", 0x5ac01000, 0x7ffffc00).Dst(ClassW, Rd).Src(ClassW, Rn).Name("Clz32"),
 		L("clz", 0xdac01000, 0xfffffc00).Dst(ClassX, Rd).Src(ClassX, Rn).Name("Clz64"),
 		L("cls", 0x5ac01400, 0x7ffffc00).Dst(ClassW, Rd).Src(ClassW, Rn).Name("Cls32"),
@@ -310,6 +355,9 @@ func init() {
 			Src(ClassW, Rt).Imm(BitPos5).Kind(ImmBitPos).Target(Imm14).Kind(ImmBranch).Name("Tbz32"),
 		L("tbnz", 0x37000000, 0xff000000).
 			Src(ClassW, Rt).Imm(BitPos5).Kind(ImmBitPos).Target(Imm14).Kind(ImmBranch).Name("Tbnz32"),
+		// ERET returns from an exception, and takes no operand because the
+		// address it returns to is in ELR_ELn rather than in a register.
+		L("eret", 0xd69f03e0, 0xffffffff).Name("Eret"),
 		L("br", 0xd61f0000, 0xfffffc1f).Src(ClassX, Rn).Name("Br"),
 		L("blr", 0xd63f0000, 0xfffffc1f).Src(ClassX, Rn).Name("Blr"),
 		// RET's operand is optional and defaults to X30. That default is the
@@ -392,6 +440,13 @@ func init() {
 		L("brk", 0xd4200000, 0xffe0001f).Imm(Imm16).Name("Brk"),
 		L("hlt", 0xd4400000, 0xffe0001f).Imm(Imm16).Name("Hlt"),
 
+		// The hint space. NOP, YIELD and the rest below are named hints, and
+		// this is the rest of it: a bare number, which is what a barrier or
+		// a pointer-authentication instruction is on a processor that does
+		// not implement one.
+		L("hint", 0xd503201f, 0xfffff01f).Imm(F(5, 7)).Name("Hint"),
+		L("paciasp", 0xd503233f, 0xffffffff).AliasOf("hint").Name("Paciasp"),
+		L("autiasp", 0xd50323bf, 0xffffffff).AliasOf("hint").Name("Autiasp"),
 		L("nop", 0xd503201f, 0xffffffff).Name("Nop"),
 		L("yield", 0xd503203f, 0xffffffff).Name("Yield"),
 		L("wfe", 0xd503205f, 0xffffffff).Name("Wfe"),
@@ -614,6 +669,113 @@ func init() {
 		L("cset", 0x9a9f07e0, 0xffff0fe0).
 			Dst(ClassX, Rd).Cnd(CondHi).
 			AliasOf("csinc").Pins(Rn, 31).Pins(Rm, 31).Attr(AttrInvertCond).Name("Cset64"),
+		L("cset", 0x1a9f07e0, 0x7fff0fe0).
+			Dst(ClassW, Rd).Cnd(CondHi).
+			AliasOf("csinc").Pins(Rn, 31).Pins(Rm, 31).Attr(AttrInvertCond).Name("Cset32"),
+
+		// CSETM is CSET's other half: all ones rather than one, which is a
+		// mask and is what a branchless select is built from.
+		L("csetm", 0xda9f03e0, 0xffff0fe0).
+			Dst(ClassX, Rd).Cnd(CondHi).
+			AliasOf("csinv").Pins(Rn, 31).Pins(Rm, 31).Attr(AttrInvertCond).Name("Csetm64"),
+		L("csetm", 0x5a9f03e0, 0x7fff0fe0).
+			Dst(ClassW, Rd).Cnd(CondHi).
+			AliasOf("csinv").Pins(Rn, 31).Pins(Rm, 31).Attr(AttrInvertCond).Name("Csetm32"),
+
+		// CINC, CINV and CNEG name one source twice, the way ROR does, and
+		// invert their condition, the way CSET does. Both facts are on the
+		// row for the same reason: an assembler reaching these through Emit
+		// has to get the word the typed helper would.
+		L("cinc", 0x1a800400, 0x7fe00c00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Cnd(CondHi).
+			AliasOf("csinc").Attr(AttrInvertCond).Attr(AttrRnIntoRm).Name("Cinc32"),
+		L("cinc", 0x9a800400, 0xffe00c00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Cnd(CondHi).
+			AliasOf("csinc").Attr(AttrInvertCond).Attr(AttrRnIntoRm).Name("Cinc64"),
+		L("cinv", 0x5a800000, 0x7fe00c00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Cnd(CondHi).
+			AliasOf("csinv").Attr(AttrInvertCond).Attr(AttrRnIntoRm).Name("Cinv32"),
+		L("cinv", 0xda800000, 0xffe00c00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Cnd(CondHi).
+			AliasOf("csinv").Attr(AttrInvertCond).Attr(AttrRnIntoRm).Name("Cinv64"),
+		L("cneg", 0x5a800400, 0x7fe00c00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Cnd(CondHi).
+			AliasOf("csneg").Attr(AttrInvertCond).Attr(AttrRnIntoRm).Name("Cneg32"),
+		L("cneg", 0xda800400, 0xffe00c00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Cnd(CondHi).
+			AliasOf("csneg").Attr(AttrInvertCond).Attr(AttrRnIntoRm).Name("Cneg64"),
+
+		// NEGS, NGC and NGCS are SUBS, SBC and SBCS with the zero register
+		// as the first source, which is the same relation NEG has to SUB.
+		L("negs", 0x6b0003e0, 0x7f2003e0).
+			Dst(ClassW, Rd).Src(ClassW, Rm).Opt(ClassShift, Shift, 0).
+			Flags().AliasOf("subs").Pins(Rn, 31).Name("Negs32"),
+		L("negs", 0xeb0003e0, 0xff2003e0).
+			Dst(ClassX, Rd).Src(ClassX, Rm).Opt(ClassShift, Shift, 0).
+			Flags().AliasOf("subs").Pins(Rn, 31).Name("Negs64"),
+		L("ngc", 0x5a0003e0, 0x7fe0ffe0).
+			Dst(ClassW, Rd).Src(ClassW, Rm).
+			AliasOf("sbc").Pins(Rn, 31).Name("Ngc32"),
+		L("ngc", 0xda0003e0, 0xffe0ffe0).
+			Dst(ClassX, Rd).Src(ClassX, Rm).
+			AliasOf("sbc").Pins(Rn, 31).Name("Ngc64"),
+		L("ngcs", 0x7a0003e0, 0x7fe0ffe0).
+			Dst(ClassW, Rd).Src(ClassW, Rm).
+			Flags().AliasOf("sbcs").Pins(Rn, 31).Name("Ngcs32"),
+		L("ngcs", 0xfa0003e0, 0xffe0ffe0).
+			Dst(ClassX, Rd).Src(ClassX, Rm).
+			Flags().AliasOf("sbcs").Pins(Rn, 31).Name("Ngcs64"),
+
+		// The widening multiply's own aliases, with the accumulator pinned
+		// to the zero register.
+		L("smull", 0x9b207c00, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
+			AliasOf("smaddl").Pins(Ra, 31).Name("Smull"),
+		L("umull", 0x9ba07c00, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
+			AliasOf("umaddl").Pins(Ra, 31).Name("Umull"),
+		L("smnegl", 0x9b20fc00, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
+			AliasOf("smsubl").Pins(Ra, 31).Name("Smnegl"),
+		L("umnegl", 0x9ba0fc00, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
+			AliasOf("umsubl").Pins(Ra, 31).Name("Umnegl"),
+
+		// The insert half of the bitfield aliases. BFXIL extracts to the low
+		// bits and shares UBFX's arithmetic; BFI, UBFIZ and SBFIZ place a
+		// field at a position and rotate to get it there.
+		L("bfxil", 0x33000000, 0x7fc00000).
+			SrcDst(ClassW, Rd).Src(ClassW, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsb).Imm(Imms).Kind(ImmBitfieldWidth).
+			AliasOf("bfm").Name("Bfxil32"),
+		L("bfxil", 0xb3400000, 0xffc00000).
+			SrcDst(ClassX, Rd).Src(ClassX, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsb).Imm(Imms).Kind(ImmBitfieldWidth).
+			AliasOf("bfm").Name("Bfxil64"),
+		L("bfi", 0x33000000, 0x7fc00000).
+			SrcDst(ClassW, Rd).Src(ClassW, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsbNeg).Imm(Imms).Kind(ImmBitfieldWidthM1).
+			AliasOf("bfm").Name("Bfi32"),
+		L("bfi", 0xb3400000, 0xffc00000).
+			SrcDst(ClassX, Rd).Src(ClassX, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsbNeg).Imm(Imms).Kind(ImmBitfieldWidthM1).
+			AliasOf("bfm").Name("Bfi64"),
+		L("ubfiz", 0x53000000, 0x7fc00000).
+			Dst(ClassW, Rd).Src(ClassW, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsbNeg).Imm(Imms).Kind(ImmBitfieldWidthM1).
+			AliasOf("ubfm").Name("Ubfiz32"),
+		L("ubfiz", 0xd3400000, 0xffc00000).
+			Dst(ClassX, Rd).Src(ClassX, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsbNeg).Imm(Imms).Kind(ImmBitfieldWidthM1).
+			AliasOf("ubfm").Name("Ubfiz64"),
+		L("sbfiz", 0x13000000, 0x7fc00000).
+			Dst(ClassW, Rd).Src(ClassW, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsbNeg).Imm(Imms).Kind(ImmBitfieldWidthM1).
+			AliasOf("sbfm").Name("Sbfiz32"),
+		L("sbfiz", 0x93400000, 0xffc00000).
+			Dst(ClassX, Rd).Src(ClassX, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsbNeg).Imm(Imms).Kind(ImmBitfieldWidthM1).
+			AliasOf("sbfm").Name("Sbfiz64"),
 		L("mul", 0x1b007c00, 0x7fe0fc00).
 			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
 			AliasOf("madd").Pins(Ra, 31).Name("Mul32"),

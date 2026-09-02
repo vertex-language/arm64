@@ -187,6 +187,84 @@ func diffCases() []diffCase {
 		{"ror x0,x1,#5", "ror x0, x1, #5", func(t *arm64.Section) { t.RorImm64(x0, x1, 5) }},
 		{"ror w0,w1,#3", "ror w0, w1, #3", func(t *arm64.Section) { t.RorImm32(w0, w1, 3) }},
 
+		// Add and subtract with carry, and the aliases on them.
+		{"adc x0,x1,x2", "adc x0, x1, x2", func(t *arm64.Section) { t.Adc64(x0, x1, x2) }},
+		{"adc w0,w1,w2", "adc w0, w1, w2", func(t *arm64.Section) { t.Adc32(w0, w1, w2) }},
+		{"adcs x0,x1,x2", "adcs x0, x1, x2", func(t *arm64.Section) { t.Adcs64(x0, x1, x2) }},
+		{"adcs w0,w1,w2", "adcs w0, w1, w2", func(t *arm64.Section) { t.Adcs32(w0, w1, w2) }},
+		{"sbc x0,x1,x2", "sbc x0, x1, x2", func(t *arm64.Section) { t.Sbc64(x0, x1, x2) }},
+		{"sbc w0,w1,w2", "sbc w0, w1, w2", func(t *arm64.Section) { t.Sbc32(w0, w1, w2) }},
+		{"sbcs x0,x1,x2", "sbcs x0, x1, x2", func(t *arm64.Section) { t.Sbcs64(x0, x1, x2) }},
+		{"sbcs w0,w1,w2", "sbcs w0, w1, w2", func(t *arm64.Section) { t.Sbcs32(w0, w1, w2) }},
+		{"negs x0,x1", "negs x0, x1", func(t *arm64.Section) { t.Negs64(x0, x1) }},
+		{"negs w0,w1", "negs w0, w1", func(t *arm64.Section) { t.Negs32(w0, w1) }},
+		{"ngc x0,x1", "ngc x0, x1", func(t *arm64.Section) { t.Ngc64(x0, x1) }},
+		{"ngc w0,w1", "ngc w0, w1", func(t *arm64.Section) { t.Ngc32(w0, w1) }},
+		{"ngcs x0,x1", "ngcs x0, x1", func(t *arm64.Section) { t.Ngcs64(x0, x1) }},
+		{"ngcs w0,w1", "ngcs w0, w1", func(t *arm64.Section) { t.Ngcs32(w0, w1) }},
+
+		// The widening multiply: W sources, an X destination.
+		{"smaddl x0,w1,w2,x3", "smaddl x0, w1, w2, x3", func(t *arm64.Section) {
+			t.Smaddl(x0, w1, w2, x3)
+		}},
+		{"umaddl x0,w1,w2,x3", "umaddl x0, w1, w2, x3", func(t *arm64.Section) {
+			t.Umaddl(x0, w1, w2, x3)
+		}},
+		{"smsubl x0,w1,w2,x3", "smsubl x0, w1, w2, x3", func(t *arm64.Section) {
+			t.Smsubl(x0, w1, w2, x3)
+		}},
+		{"umsubl x0,w1,w2,x3", "umsubl x0, w1, w2, x3", func(t *arm64.Section) {
+			t.Umsubl(x0, w1, w2, x3)
+		}},
+		{"smull x0,w1,w2", "smull x0, w1, w2", func(t *arm64.Section) { t.Smull(x0, w1, w2) }},
+		{"umull x0,w1,w2", "umull x0, w1, w2", func(t *arm64.Section) { t.Umull(x0, w1, w2) }},
+		{"smnegl x0,w1,w2", "smnegl x0, w1, w2", func(t *arm64.Section) { t.Smnegl(x0, w1, w2) }},
+		{"umnegl x0,w1,w2", "umnegl x0, w1, w2", func(t *arm64.Section) { t.Umnegl(x0, w1, w2) }},
+
+		// The conditional aliases, which name one source twice and invert
+		// their condition — both on the row, so this is what checks that
+		// the row does it and not the helper.
+		{"cset w0,ne", "cset w0, ne", func(t *arm64.Section) { t.Cset32(w0, arm64.NE) }},
+		{"csetm x0,ne", "csetm x0, ne", func(t *arm64.Section) { t.Csetm64(x0, arm64.NE) }},
+		{"csetm w0,ne", "csetm w0, ne", func(t *arm64.Section) { t.Csetm32(w0, arm64.NE) }},
+		{"cinc x0,x1,ne", "cinc x0, x1, ne", func(t *arm64.Section) { t.Cinc64(x0, x1, arm64.NE) }},
+		{"cinc w0,w1,ne", "cinc w0, w1, ne", func(t *arm64.Section) { t.Cinc32(w0, w1, arm64.NE) }},
+		{"cinv x0,x1,ne", "cinv x0, x1, ne", func(t *arm64.Section) { t.Cinv64(x0, x1, arm64.NE) }},
+		{"cinv w0,w1,ne", "cinv w0, w1, ne", func(t *arm64.Section) { t.Cinv32(w0, w1, arm64.NE) }},
+		{"cneg x0,x1,ne", "cneg x0, x1, ne", func(t *arm64.Section) { t.Cneg64(x0, x1, arm64.NE) }},
+		{"cneg w0,w1,ne", "cneg w0, w1, ne", func(t *arm64.Section) { t.Cneg32(w0, w1, arm64.NE) }},
+
+		// Bitfield insert, where immr rotates the source into position.
+		{"bfi x0,x1,#4,#8", "bfi x0, x1, #4, #8", func(t *arm64.Section) { t.Bfi64(x0, x1, 4, 8) }},
+		{"bfi w0,w1,#4,#8", "bfi w0, w1, #4, #8", func(t *arm64.Section) { t.Bfi32(w0, w1, 4, 8) }},
+		{"bfxil x0,x1,#4,#8", "bfxil x0, x1, #4, #8", func(t *arm64.Section) {
+			t.Bfxil64(x0, x1, 4, 8)
+		}},
+		{"bfxil w0,w1,#4,#8", "bfxil w0, w1, #4, #8", func(t *arm64.Section) {
+			t.Bfxil32(w0, w1, 4, 8)
+		}},
+		{"ubfiz x0,x1,#4,#8", "ubfiz x0, x1, #4, #8", func(t *arm64.Section) {
+			t.Ubfiz64(x0, x1, 4, 8)
+		}},
+		{"ubfiz w0,w1,#4,#8", "ubfiz w0, w1, #4, #8", func(t *arm64.Section) {
+			t.Ubfiz32(w0, w1, 4, 8)
+		}},
+		{"sbfiz x0,x1,#4,#8", "sbfiz x0, x1, #4, #8", func(t *arm64.Section) {
+			t.Sbfiz64(x0, x1, 4, 8)
+		}},
+		{"sbfiz w0,w1,#4,#8", "sbfiz w0, w1, #4, #8", func(t *arm64.Section) {
+			t.Sbfiz32(w0, w1, 4, 8)
+		}},
+
+		// The hint space, the exception return, and the two byte reverses
+		// that are not REV.
+		{"hint #20", "hint #0x14", func(t *arm64.Section) { t.Hint(0x14) }},
+		{"paciasp", "paciasp", func(t *arm64.Section) { t.Paciasp() }},
+		{"autiasp", "autiasp", func(t *arm64.Section) { t.Autiasp() }},
+		{"eret", "eret", func(t *arm64.Section) { t.Eret() }},
+		{"rev64 x0,x1", "rev64 x0, x1", func(t *arm64.Section) { t.Rev64Alias(x0, x1) }},
+		{"rev32 x0,x1", "rev32 x0, x1", func(t *arm64.Section) { t.Rev32In64(x0, x1) }},
+
 		// Conditional compare, at both widths and with both operand shapes.
 		{"ccmp x0,x1,#0,eq", "ccmp x0, x1, #0, eq", func(t *arm64.Section) {
 			t.CcmpReg64(x0, x1, 0, arm64.EQ)

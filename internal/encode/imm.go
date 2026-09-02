@@ -215,6 +215,25 @@ func encodeImm(f *isa.Form, i int, s isa.Slot, v val, explicitShift bool, prev i
 					" for a field starting at bit " + strconv.FormatInt(prev, 10)}
 		}
 		return immResult{value: uint64(prev + v.imm - 1)}, nil
+
+	case isa.ImmBitfieldLsbNeg:
+		// The insert direction: the field is placed at lsb, so the source
+		// is rotated right by W-lsb to bring its low bits there.
+		w := int64(FormWidth(f))
+		if v.imm < 0 || v.imm >= w {
+			return immResult{}, &RangeError{f, i, v.imm,
+				"a bit position from 0 to " + strconv.FormatInt(w-1, 10)}
+		}
+		return immResult{value: uint64((w - v.imm) % w)}, nil
+
+	case isa.ImmBitfieldWidthM1:
+		w := int64(FormWidth(f))
+		if v.imm < 1 || prev+v.imm > w {
+			return immResult{}, &RangeError{f, i, v.imm,
+				"a width from 1 to " + strconv.FormatInt(w-prev, 10) +
+					" for a field placed at bit " + strconv.FormatInt(prev, 10)}
+		}
+		return immResult{value: uint64(v.imm - 1)}, nil
 	}
 
 	return immResult{}, &UnsupportedError{f, "an immediate rule this encoder does not know"}

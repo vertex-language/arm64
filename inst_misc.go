@@ -30,6 +30,10 @@ func (s *Section) Hlt(imm uint16) { s.inst(hlt, uint64(imm)) }
 // ---- Hints and no-ops -----------------------------------------------------
 
 var (
+	hint    = form("Hint")
+	paciasp = form("Paciasp")
+	autiasp = form("Autiasp")
+
 	nop   = form("Nop")
 	yield = form("Yield")
 	wfe   = form("Wfe")
@@ -40,6 +44,20 @@ var (
 
 // Nop emits NOP: D503201F, the architecture's one canonical no-op.
 func (s *Section) Nop() { s.inst(nop) }
+
+// Hint emits HINT #imm, the hint space itself. Every named hint below is one
+// of these, and so is every hint a processor does not implement — which is
+// the point of the encoding: an unimplemented hint is a NOP rather than an
+// undefined instruction, so a barrier written for a later processor runs on
+// an earlier one.
+func (s *Section) Hint(imm uint8) { s.inst(hint, uint64(imm)) }
+
+// Paciasp signs the return address in X30 against SP; Autiasp authenticates
+// it. They are hints 25 and 29, which is why they are NOPs on a processor
+// without pointer authentication and why a function using them still runs
+// there.
+func (s *Section) Paciasp() { s.inst(paciasp) }
+func (s *Section) Autiasp() { s.inst(autiasp) }
 
 func (s *Section) Yield() { s.inst(yield) }
 func (s *Section) Wfe()   { s.inst(wfe) }

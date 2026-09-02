@@ -93,7 +93,18 @@ func (s *Section) CcmnImm64(rn reg.X, imm uint8, nzcv uint8, c Cond) {
 
 // ---- Alias: set on condition ------------------------------------------------
 
-var cset64 = form("Cset64")
+var (
+	cset64  = form("Cset64")
+	cset32  = form("Cset32")
+	csetm64 = form("Csetm64")
+	csetm32 = form("Csetm32")
+	cinc32  = form("Cinc32")
+	cinc64  = form("Cinc64")
+	cinv32  = form("Cinv32")
+	cinv64  = form("Cinv64")
+	cneg32  = form("Cneg32")
+	cneg64  = form("Cneg64")
+)
 
 // Cset64 emits CSET Xd, cond: Xd = cond ? 1 : 0.
 //
@@ -103,3 +114,25 @@ var cset64 = form("Cset64")
 // through Emit has to get the same word, and it did not while the rule lived
 // here.
 func (s *Section) Cset64(rd reg.X, c Cond) { s.inst(cset64, rd, c) }
+
+func (s *Section) Cset32(rd reg.W, c Cond) { s.inst(cset32, rd, c) }
+
+// Csetm64 emits CSETM Xd, cond: Xd = cond ? -1 : 0. The mask, where CSET is
+// the flag — and the difference is CSINV rather than CSINC underneath.
+func (s *Section) Csetm64(rd reg.X, c Cond) { s.inst(csetm64, rd, c) }
+func (s *Section) Csetm32(rd reg.W, c Cond) { s.inst(csetm32, rd, c) }
+
+// Cinc64 emits CINC Xd, Xn, cond: Xd = cond ? Xn+1 : Xn. It names one source
+// twice in the encoding and inverts its condition, both of which are the
+// row's doing rather than this function's — see Cset64.
+func (s *Section) Cinc32(rd, rn reg.W, c Cond) { s.inst(cinc32, rd, rn, c) }
+func (s *Section) Cinc64(rd, rn reg.X, c Cond) { s.inst(cinc64, rd, rn, c) }
+
+// Cinv64 emits CINV Xd, Xn, cond: Xd = cond ? ^Xn : Xn.
+func (s *Section) Cinv32(rd, rn reg.W, c Cond) { s.inst(cinv32, rd, rn, c) }
+func (s *Section) Cinv64(rd, rn reg.X, c Cond) { s.inst(cinv64, rd, rn, c) }
+
+// Cneg64 emits CNEG Xd, Xn, cond: Xd = cond ? -Xn : Xn, which is how an
+// absolute value is written without a branch.
+func (s *Section) Cneg32(rd, rn reg.W, c Cond) { s.inst(cneg32, rd, rn, c) }
+func (s *Section) Cneg64(rd, rn reg.X, c Cond) { s.inst(cneg64, rd, rn, c) }

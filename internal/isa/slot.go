@@ -260,6 +260,15 @@ const (
 	ImmBitfieldLsb
 	ImmBitfieldWidth
 
+	// ImmBitfieldLsbNeg and ImmBitfieldWidthM1 are the insert direction of
+	// the same pair: BFI and UBFIZ place a field *at* lsb rather than
+	// extracting one *from* it, so immr rotates the source into position —
+	// (W - lsb) mod W — and imms is the width alone. The two rules are
+	// separate from the extract pair because the arithmetic is, not because
+	// the instructions are: BFXIL and BFI are one encoding under two names.
+	ImmBitfieldLsbNeg
+	ImmBitfieldWidthM1
+
 	immKindCount
 )
 
@@ -304,6 +313,10 @@ func (k ImmKind) String() string {
 		return "bitfieldlsb"
 	case ImmBitfieldWidth:
 		return "bitfieldwidth"
+	case ImmBitfieldLsbNeg:
+		return "bitfieldlsbneg"
+	case ImmBitfieldWidthM1:
+		return "bitfieldwidthm1"
 	}
 	return "none"
 }
