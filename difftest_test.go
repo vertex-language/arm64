@@ -187,6 +187,37 @@ func diffCases() []diffCase {
 		{"ror x0,x1,#5", "ror x0, x1, #5", func(t *arm64.Section) { t.RorImm64(x0, x1, 5) }},
 		{"ror w0,w1,#3", "ror w0, w1, #3", func(t *arm64.Section) { t.RorImm32(w0, w1, 3) }},
 
+		// Register-offset addressing, built with Mem.Indexed. The extend
+		// says which width the index is read at, and mismatching the two
+		// is what Mem.Validate refuses.
+		{"ldr x0,[x1,x2]", "ldr x0, [x1, x2]", func(t *arm64.Section) {
+			t.LdrReg64(x0, arm64.Mem64(x1).Indexed(x2, arm64.ExtLSL, 0))
+		}},
+		{"ldr x0,[x1,x2,lsl3]", "ldr x0, [x1, x2, lsl #3]", func(t *arm64.Section) {
+			t.LdrReg64(x0, arm64.Mem64(x1).Indexed(x2, arm64.ExtLSL, 3))
+		}},
+		{"ldr w0,[x1,x2,lsl2]", "ldr w0, [x1, x2, lsl #2]", func(t *arm64.Section) {
+			t.LdrReg32(w0, arm64.Mem32(x1).Indexed(x2, arm64.ExtLSL, 2))
+		}},
+		{"str x0,[x1,x2]", "str x0, [x1, x2]", func(t *arm64.Section) {
+			t.StrReg64(x0, arm64.Mem64(x1).Indexed(x2, arm64.ExtLSL, 0))
+		}},
+		{"ldr x0,[x1,w2,uxtw3]", "ldr x0, [x1, w2, uxtw #3]", func(t *arm64.Section) {
+			t.LdrReg64(x0, arm64.Mem64(x1).Indexed(w2, arm64.UXTW, 3))
+		}},
+		{"ldr x0,[x1,w2,sxtw]", "ldr x0, [x1, w2, sxtw]", func(t *arm64.Section) {
+			t.LdrReg64(x0, arm64.Mem64(x1).Indexed(w2, arm64.SXTW, 0))
+		}},
+		{"ldrb w0,[x1,x2]", "ldrb w0, [x1, x2]", func(t *arm64.Section) {
+			t.LdrbReg(w0, arm64.Mem8(x1).Indexed(x2, arm64.ExtLSL, 0))
+		}},
+		{"ldrsw x0,[x1,x2]", "ldrsw x0, [x1, x2]", func(t *arm64.Section) {
+			t.LdrswReg(x0, arm64.Mem32(x1).Indexed(x2, arm64.ExtLSL, 0))
+		}},
+		{"prfm pldl1keep,[x1,x2]", "prfm pldl1keep, [x1, x2]", func(t *arm64.Section) {
+			t.PrfmReg(arm64.PLDL1KEEP, arm64.Mem64(x1).Indexed(x2, arm64.ExtLSL, 0))
+		}},
+
 		// Add and subtract with carry, and the aliases on them.
 		{"adc x0,x1,x2", "adc x0, x1, x2", func(t *arm64.Section) { t.Adc64(x0, x1, x2) }},
 		{"adc w0,w1,w2", "adc w0, w1, w2", func(t *arm64.Section) { t.Adc32(w0, w1, w2) }},

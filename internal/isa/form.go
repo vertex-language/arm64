@@ -58,6 +58,18 @@ const (
 	// and rotate the wrong pair. Naming it here rather than in a typed
 	// helper is what keeps the assembler and the helper emitting one word.
 	AttrRnIntoRm
+
+	// AttrRegOffset marks a load or store whose address is a base plus an
+	// index register: [Xn, Xm{, LSL #s}] and [Xn, Wm, SXTW #s].
+	//
+	// It is a form attribute rather than three more slots because the three
+	// fields are the same three bits on every row that has them — Rm, the
+	// option that says how the index is read, and the one-bit shift — and
+	// because the operand is a single Mem value that fills all of them. The
+	// row still has to exist: bit 21 and bits 11:10 make this a different
+	// encoding from the scaled-immediate form, not a different operand of
+	// the same one.
+	AttrRegOffset
 )
 
 // Form is one declared encoding of one mnemonic.

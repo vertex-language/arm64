@@ -157,11 +157,12 @@ func addrFits(f *Form, base Slot, a Arg) bool {
 	case AddrPostIndex:
 		return f.Attrs&AttrPostIndex != 0
 	case AddrRegOffset:
-		// The table declares no Rm or option field for one anywhere yet,
-		// and encodeMem refuses it by name.
-		return false
+		return f.Attrs&AttrRegOffset != 0
 	case AddrBase, AddrOffset, AddrNone:
-		return !writeback
+		// A register-offset row is a different encoding rather than a
+		// different operand, so it does not also accept [Xn] — which is
+		// what keeps `ldr x0, [x1]` on the scaled-immediate row.
+		return !writeback && f.Attrs&AttrRegOffset == 0
 	}
 	return false
 }

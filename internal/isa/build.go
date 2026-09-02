@@ -64,6 +64,18 @@ func (f *Form) Mem(bits uint16, base, off Field) *Form {
 	return f
 }
 
+// MemIdx adds a register-offset address: a base register, an index register,
+// and the extend and shift that say how the index is read.
+//
+// One slot and an attribute, not four slots: the operand is one Mem value,
+// and the fields it fills are at the same bits on every row that has them.
+// See AttrRegOffset.
+func (f *Form) MemIdx(bits uint16, base Field) *Form {
+	f.Attrs |= AttrRegOffset
+	f.Slots = append(f.Slots, Slot{Class: memClass(bits), Role: RoleBase, Field: base})
+	return f
+}
+
 // Target adds a branch or address destination.
 func (f *Form) Target(fld Field) *Form {
 	f.Attrs |= AttrBranch

@@ -123,3 +123,39 @@ func TestBitfieldExtractWidth(t *testing.T) {
 		t.Errorf("error %q does not say where the field started", err)
 	}
 }
+
+// The index shift is one bit: no shift, or exactly the log of the access
+// width. The width comes from the form, since an address written in assembly
+// does not state one — the mnemonic already did.
+func TestRegisterOffsetShiftAmount(t *testing.T) {
+	m := arm64.NewModule()
+	s := m.Section(arm64.Text)
+	s.Label("f", arm64.Global, arm64.Func)
+	s.LdrReg64(arm64.X0, arm64.Mem64(arm64.X1).Indexed(arm64.X2, arm64.ExtLSL, 2))
+
+	err := m.Err()
+	if err == nil {
+		t.Fatal("a shift of 2 was accepted on an eight-byte access")
+	}
+	if !strings.Contains(err.Error(), "must be 0 or 3") {
+		t.Errorf("error %q does not name the shift this form allows", err)
+	}
+}
+
+// An index register whose width disagrees with its extend is refused by the
+// operand, before any form is chosen: it is the most common thing to get
+// wrong when writing an address by hand.
+func TestRegisterOffsetIndexWidth(t *testing.T) {
+	m := arm64.NewModule()
+	s := m.Section(arm64.Text)
+	s.Label("f", arm64.Global, arm64.Func)
+	s.LdrReg64(arm64.X0, arm64.Mem64(arm64.X1).Indexed(arm64.W2, arm64.SXTX, 0))
+
+	err := m.Err()
+	if err == nil {
+		t.Fatal("a W index under SXTX was accepted")
+	}
+	if !strings.Contains(err.Error(), "32-bit register") {
+		t.Errorf("error %q does not name the mismatch", err)
+	}
+}

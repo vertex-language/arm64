@@ -132,6 +132,11 @@ var (
 	Opt   = F(13, 3)
 	Amt   = F(10, 3)
 
+	// The register-offset address's own three fields, at the same bits on
+	// every load and store that has them.
+	Option = F(13, 3)
+	SBit   = F(12, 1)
+
 	Cond   = F(0, 4)
 	CondHi = F(12, 4)
 	Nzcv   = F(0, 4)

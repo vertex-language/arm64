@@ -1,6 +1,8 @@
 package encode
 
 import (
+	"strconv"
+
 	"github.com/vertex-language/arm64/feature"
 	"github.com/vertex-language/arm64/internal/isa"
 	"github.com/vertex-language/arm64/operand"
@@ -379,8 +381,11 @@ func encodeMem(f *isa.Form, oi, si int, v val, opts Opts) (func(uint32) uint32, 
 				"this form has no writeback; a post-indexed address is a different encoding"}
 		}
 	case operand.AddrRegOffset:
-		return nil, nil, 0, &UnsupportedError{f,
-			"a register-offset address: the table declares no Rm or option field for one"}
+		if f.Attrs&isa.AttrRegOffset == 0 {
+			return nil, nil, 0, &AddressError{f, oi, m,
+				"this form takes an immediate offset; a register-offset address is a different encoding"}
+		}
+		return encodeRegOffset(f, oi, base, m, consumed)
 	}
 
 	n, why := regNum(isa.ClassXsp, m.Base)
@@ -427,6 +432,54 @@ func encodeMem(f *isa.Form, oi, si int, v val, opts Opts) (func(uint32) uint32, 
 	inner := apply
 	apply = func(w uint32) uint32 { return place(inner(w), off.Field, r.value) }
 	return apply, fixups, consumed, nil
+}
+
+// encodeRegOffset fills the three fields of [Xn, Xm{, extend {amount}}].
+//
+// The extend's own value is the option field — operand.Extend is defined that
+// way — and the shift is one bit, either no shift or exactly the log of the
+// access width, which Mem.Validate has already checked. There is no
+// displacement and so no fixup: an index register is a value at run time and
+// a relocation has nothing to say about it.
+func encodeRegOffset(f *isa.Form, oi int, base isa.Slot, m operand.Mem, consumed int) (func(uint32) uint32, []Fixup, int, error) {
+	n, why := regNum(isa.ClassXsp, m.Base)
+	if why != "" {
+		return nil, nil, 0, &RegisterError{f, oi, isa.ClassXsp, m.Base.String(), why}
+	}
+
+	// The class the index is read at is the extend's business rather than
+	// the slot's — Mem.Validate has already refused a W index under SXTX and
+	// an X index under UXTW — so this asks only for the register number.
+	cls := isa.ClassX
+	if m.Ext.SourceIsW() {
+		cls = isa.ClassW
+	}
+	idx, why := regNum(cls, m.Index)
+	if why != "" {
+		return nil, nil, 0, &RegisterError{f, oi, cls, m.Index.String(), why}
+	}
+
+	// The shift is one bit: no shift, or exactly the log of this form's
+	// access width. The form is what knows that width — an address written
+	// in assembly does not state one, because the mnemonic already did —
+	// so the check belongs here rather than in Mem.Validate.
+	sbit := uint64(0)
+	if m.Amount != 0 {
+		sc, ok := operand.Width(f.AccessBits()).Scale()
+		if !ok || m.Amount != sc {
+			return nil, nil, 0, &AddressError{f, oi, m,
+				"index shift must be 0 or " + strconv.Itoa(int(sc)) + " for this access width"}
+		}
+		sbit = 1
+	}
+	opt := uint64(m.Ext)
+
+	return func(w uint32) uint32 {
+		w = place(w, base.Field, n)
+		w = place(w, isa.Rm, idx)
+		w = place(w, isa.Option, opt)
+		return place(w, isa.SBit, sbit)
+	}, nil, consumed, nil
 }
 
 func scaleOf(f *isa.Form) uint8 {

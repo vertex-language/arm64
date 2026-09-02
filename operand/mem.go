@@ -240,12 +240,14 @@ func (m Mem) Validate() error {
 		}
 		// The shift is one bit in the encoding: either no shift, or exactly
 		// the log of the access width. Anything else has no field to go in.
+		//
+		// An address built without a stated width — Mem rather than Mem64,
+		// which is what an assembler produces, since the mnemonic is what
+		// says how wide the access is — is checked against the form instead,
+		// where the width is known. This is the operand's half of the same
+		// rule, and it is the half a typed caller meets.
 		if m.Amount != 0 {
-			sc, ok := m.Width.Scale()
-			if !ok {
-				return errors.New("a shifted index needs a stated access width: write Mem64 rather than Mem")
-			}
-			if m.Amount != sc {
+			if sc, ok := m.Width.Scale(); ok && m.Amount != sc {
 				return errors.New("index shift must be 0 or " + strconv.Itoa(int(sc)) +
 					" for a " + m.Width.String() + " access")
 			}

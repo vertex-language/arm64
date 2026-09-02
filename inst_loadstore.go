@@ -138,3 +138,50 @@ var prfmImm = form("PrfmImm")
 // see operand.PrfOp — and occupies the field a load's destination register
 // would.
 func (s *Section) PrfmImm(op PrfOp, addr Mem) { s.inst(prfmImm, op, addr) }
+
+// ---- Load and store, register offset ---------------------------------------
+//
+// [Xn, Xm{, LSL #s}] and [Xn, Wm, SXTW #s], built with Mem.Indexed. The
+// extend says which width the index is read at, and the shift is one bit —
+// either none, or exactly the log of the access width, which the form knows
+// and the address does not have to state.
+
+var (
+	strbReg    = form("StrbReg")
+	ldrbReg    = form("LdrbReg")
+	strhReg    = form("StrhReg")
+	ldrhReg    = form("LdrhReg")
+	strReg32   = form("StrReg32")
+	ldrReg32   = form("LdrReg32")
+	strReg64   = form("StrReg64")
+	ldrReg64   = form("LdrReg64")
+	ldrsbReg32 = form("LdrsbReg32")
+	ldrsbReg64 = form("LdrsbReg64")
+	ldrshReg32 = form("LdrshReg32")
+	ldrshReg64 = form("LdrshReg64")
+	ldrswReg   = form("LdrswReg")
+	prfmReg    = form("PrfmReg")
+)
+
+// StrbReg emits STRB Wt, [Xn|SP, Rm{, extend {amount}}].
+func (s *Section) StrbReg(rt reg.W, m Mem) { s.inst(strbReg, rt, m) }
+func (s *Section) LdrbReg(rt reg.W, m Mem) { s.inst(ldrbReg, rt, m) }
+func (s *Section) StrhReg(rt reg.W, m Mem) { s.inst(strhReg, rt, m) }
+func (s *Section) LdrhReg(rt reg.W, m Mem) { s.inst(ldrhReg, rt, m) }
+
+// StrReg32 emits STR Wt, [Xn|SP, Rm{, extend {amount}}].
+func (s *Section) StrReg32(rt reg.W, m Mem) { s.inst(strReg32, rt, m) }
+func (s *Section) LdrReg32(rt reg.W, m Mem) { s.inst(ldrReg32, rt, m) }
+func (s *Section) StrReg64(rt reg.X, m Mem) { s.inst(strReg64, rt, m) }
+func (s *Section) LdrReg64(rt reg.X, m Mem) { s.inst(ldrReg64, rt, m) }
+
+// The sign-extending loads, whose destination width is the name's second
+// half rather than the access width, which is its first.
+func (s *Section) LdrsbReg32(rt reg.W, m Mem) { s.inst(ldrsbReg32, rt, m) }
+func (s *Section) LdrsbReg64(rt reg.X, m Mem) { s.inst(ldrsbReg64, rt, m) }
+func (s *Section) LdrshReg32(rt reg.W, m Mem) { s.inst(ldrshReg32, rt, m) }
+func (s *Section) LdrshReg64(rt reg.X, m Mem) { s.inst(ldrshReg64, rt, m) }
+func (s *Section) LdrswReg(rt reg.X, m Mem)   { s.inst(ldrswReg, rt, m) }
+
+// PrfmReg emits PRFM <prfop>, [Xn|SP, Rm{, extend {amount}}].
+func (s *Section) PrfmReg(op PrfOp, m Mem) { s.inst(prfmReg, op, m) }

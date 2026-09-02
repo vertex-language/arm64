@@ -397,6 +397,42 @@ func init() {
 		L("ldrsw", 0xb9800000, 0xffc00000).
 			Dst(ClassX, Rt).Mem(32, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrswImm"),
 
+		// ---- Load and store, register offset ----
+		//
+		// [Xn, Xm{, LSL #s}] and [Xn, Wm, SXTW #s]: the addressing mode a
+		// subscripted array uses, and the one an assembler meets first.
+		// Bit 21 and bits 11:10 make it a different encoding from the
+		// scaled-immediate form rather than a different operand of it,
+		// which is why these are rows and not an attribute on those.
+		L("strb", 0x38200800, 0xffe00c00).
+			Src(ClassW, Rt).MemIdx(8, Rn).Name("StrbReg"),
+		L("ldrb", 0x38600800, 0xffe00c00).
+			Dst(ClassW, Rt).MemIdx(8, Rn).Name("LdrbReg"),
+		L("strh", 0x78200800, 0xffe00c00).
+			Src(ClassW, Rt).MemIdx(16, Rn).Name("StrhReg"),
+		L("ldrh", 0x78600800, 0xffe00c00).
+			Dst(ClassW, Rt).MemIdx(16, Rn).Name("LdrhReg"),
+		L("str", 0xb8200800, 0xffe00c00).
+			Src(ClassW, Rt).MemIdx(32, Rn).Name("StrReg32"),
+		L("ldr", 0xb8600800, 0xffe00c00).
+			Dst(ClassW, Rt).MemIdx(32, Rn).Name("LdrReg32"),
+		L("str", 0xf8200800, 0xffe00c00).
+			Src(ClassX, Rt).MemIdx(64, Rn).Name("StrReg64"),
+		L("ldr", 0xf8600800, 0xffe00c00).
+			Dst(ClassX, Rt).MemIdx(64, Rn).Name("LdrReg64"),
+		L("ldrsb", 0x38e00800, 0xffe00c00).
+			Dst(ClassW, Rt).MemIdx(8, Rn).Name("LdrsbReg32"),
+		L("ldrsb", 0x38a00800, 0xffe00c00).
+			Dst(ClassX, Rt).MemIdx(8, Rn).Name("LdrsbReg64"),
+		L("ldrsh", 0x78e00800, 0xffe00c00).
+			Dst(ClassW, Rt).MemIdx(16, Rn).Name("LdrshReg32"),
+		L("ldrsh", 0x78a00800, 0xffe00c00).
+			Dst(ClassX, Rt).MemIdx(16, Rn).Name("LdrshReg64"),
+		L("ldrsw", 0xb8a00800, 0xffe00c00).
+			Dst(ClassX, Rt).MemIdx(32, Rn).Name("LdrswReg"),
+		L("prfm", 0xf8a00800, 0xffe00c00).
+			Prf(Rt).MemIdx(64, Rn).Name("PrfmReg"),
+
 		// ---- Load and store, unscaled ----
 		L("stur", 0xb8000000, 0xffe00c00).
 			Src(ClassW, Rt).Mem(32, Rn, Imm9).Kind(ImmUnscaled).Name("SturImm32"),
