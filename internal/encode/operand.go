@@ -23,6 +23,7 @@ type val struct {
 	bar   operand.Barrier
 	prf   operand.PrfOp
 	sys   reg.Sys
+	pst   operand.PState
 }
 
 type valKind uint8
@@ -38,6 +39,7 @@ const (
 	valCond
 	valBarrier
 	valPrfOp
+	valPState
 	valSys
 )
 
@@ -81,6 +83,8 @@ func lower(v any) val {
 		return val{kind: valBarrier, raw: v, bar: x}
 	case operand.PrfOp:
 		return val{kind: valPrfOp, raw: v, prf: x}
+	case operand.PState:
+		return val{kind: valPState, raw: v, pst: x}
 
 	case reg.Sys:
 		return val{kind: valSys, raw: v, sys: x, reg: x}
@@ -113,6 +117,8 @@ func (v val) arg() isa.Arg {
 		return isa.Arg{Class: isa.ClassBarrier}
 	case valPrfOp:
 		return isa.Arg{Class: isa.ClassPrfOp}
+	case valPState:
+		return isa.Arg{Class: isa.ClassPState}
 	}
 	return isa.Arg{}
 }

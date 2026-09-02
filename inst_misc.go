@@ -92,3 +92,13 @@ func (s *Section) Mrs(rt reg.X, sr Sys) { s.inst(mrs, rt, sr) }
 
 // MsrReg emits MSR sysreg, Xt: writes Xt into a system register.
 func (s *Section) MsrReg(sr Sys, rt reg.X) { s.inst(msrReg, sr, rt) }
+
+// ---- MSR (immediate) --------------------------------------------------------
+
+var msrImm = form("MsrImm")
+
+// MsrImm emits MSR <pstatefield>, #imm: four bits written into a named piece
+// of process state. `MsrImm(operand.DAIFSet, 2)` is how interrupts are
+// masked, and it is a different instruction from MSR with a register — there
+// is no register anywhere in the word.
+func (s *Section) MsrImm(field PState, imm uint8) { s.inst(msrImm, field, uint64(imm)) }

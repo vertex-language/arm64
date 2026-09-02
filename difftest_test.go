@@ -127,6 +127,18 @@ func diffCases() []diffCase {
 		{"sub x0,sp,x3", "sub x0, sp, x3", func(t *arm64.Section) { t.SubExt64(x0, arm64.SP, x3) }},
 		{"mrs x0,nzcv", "mrs x0, nzcv", func(t *arm64.Section) { t.Mrs(x0, arm64.NZCV) }},
 		{"msr nzcv,x0", "msr nzcv, x0", func(t *arm64.Section) { t.MsrReg(arm64.NZCV, x0) }},
+		{"mrs x0,sp_el0", "mrs x0, sp_el0", func(t *arm64.Section) { t.Mrs(x0, arm64.SP_EL0) }},
+
+		// MSR (immediate): a named piece of process state and four bits.
+		{"msr daifset,#2", "msr daifset, #2", func(t *arm64.Section) {
+			t.MsrImm(arm64.DAIFSet, 2)
+		}},
+		{"msr daifclr,#2", "msr daifclr, #2", func(t *arm64.Section) {
+			t.MsrImm(arm64.DAIFClr, 2)
+		}},
+		{"msr spsel,#1", "msr spsel, #1", func(t *arm64.Section) {
+			t.MsrImm(arm64.SPSelField, 1)
+		}},
 		{"tst x0,x1", "tst x0, x1", func(t *arm64.Section) { t.TstShifted64(x0, x1) }},
 		{"cmp x0,x1", "cmp x0, x1", func(t *arm64.Section) { t.CmpShifted64(x0, x1) }},
 		{"cmp x0,#4", "cmp x0, #4", func(t *arm64.Section) { t.CmpImm64(x0, 4) }},

@@ -71,6 +71,12 @@ const (
 	DCZID_EL0  = Sys(3<<14 | 3<<11 | 0<<7 | 0<<3 | 7)
 	CNTVCT_EL0 = Sys(3<<14 | 3<<11 | 14<<7 | 0<<3 | 2)
 
+	// The stack pointers of each exception level, which are ordinary system
+	// registers rather than the SP an instruction addresses.
+	SP_EL0 = Sys(3<<14 | 0<<11 | 4<<7 | 1<<3 | 0)
+	SP_EL1 = Sys(3<<14 | 4<<11 | 4<<7 | 1<<3 | 0)
+	SP_EL2 = Sys(3<<14 | 6<<11 | 4<<7 | 1<<3 | 0)
+
 	// EL1 system control.
 	SCTLR_EL1 = Sys(3<<14 | 0<<11 | 1<<7 | 0<<3 | 0)
 	TTBR0_EL1 = Sys(3<<14 | 0<<11 | 2<<7 | 0<<3 | 0)

@@ -88,6 +88,7 @@ func (s Sys) String() string {
 
 var sysName = map[Sys]string{
 	NZCV: "nzcv", DAIF: "daif", CurrentEL: "currentel", SPSel: "spsel",
+	SP_EL0: "sp_el0", SP_EL1: "sp_el1", SP_EL2: "sp_el2",
 	FPCR: "fpcr", FPSR: "fpsr",
 	TPIDR_EL0: "tpidr_el0", TPIDRRO_EL0: "tpidrro_el0", TPIDR_EL1: "tpidr_el1",
 	TPIDR_EL2: "tpidr_el2", TPIDR_EL3: "tpidr_el3",

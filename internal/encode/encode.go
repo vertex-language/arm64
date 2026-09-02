@@ -246,6 +246,17 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 			word = place(word, s.Field, uint64(v.bar))
 			oi++
 
+		case s.Class == isa.ClassPState:
+			// The field is op1 and op2, either side of the immediate. Two
+			// fields and one operand, which is why the slot names neither
+			// and the form's attribute says what to do instead.
+			if v.kind != valPState || !v.pst.Valid() {
+				return 0, nil, &OperandError{f, oi, s.Class, v.raw}
+			}
+			word = place(word, isa.Op1, uint64(v.pst.Op1()))
+			word = place(word, isa.Op2, uint64(v.pst.Op2()))
+			oi++
+
 		case s.Class == isa.ClassPrfOp:
 			if v.kind != valPrfOp {
 				return 0, nil, &OperandError{f, oi, s.Class, v.raw}

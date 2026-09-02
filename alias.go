@@ -203,6 +203,7 @@ type (
 	ExtendOp = operand.ExtendOp
 	Barrier  = operand.Barrier
 	PrfOp    = operand.PrfOp
+	PState   = operand.PState
 	Sys      = reg.Sys
 )
 
@@ -286,6 +287,13 @@ const (
 	PSTL3KEEP, PSTL3STRM = operand.PSTL3KEEP, operand.PSTL3STRM
 )
 
+// The MSR (immediate) fields.
+const (
+	DAIFSet    = operand.DAIFSet
+	DAIFClr    = operand.DAIFClr
+	SPSelField = operand.SPSelField
+)
+
 // ---- system registers -------------------------------------------------------
 
 func NewSys(op0, op1, crn, crm, op2 uint8) Sys { return reg.NewSys(op0, op1, crn, crm, op2) }
@@ -295,6 +303,10 @@ const (
 	DAIF      = reg.DAIF
 	CurrentEL = reg.CurrentEL
 	SPSel     = reg.SPSel
+
+	SP_EL0 = reg.SP_EL0
+	SP_EL1 = reg.SP_EL1
+	SP_EL2 = reg.SP_EL2
 
 	FPCR = reg.FPCR
 	FPSR = reg.FPSR

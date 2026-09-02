@@ -6,6 +6,7 @@ import (
 	"github.com/vertex-language/arm64"
 	"github.com/vertex-language/arm64/obj"
 	"github.com/vertex-language/arm64/operand"
+	"github.com/vertex-language/arm64/reg"
 	"github.com/vertex-language/gas"
 )
 
@@ -37,6 +38,8 @@ func (t *target) Inst(p *gas.Parser, mnem string) error {
 			break
 		}
 	}
+
+	ops = pstateField(name, ops)
 
 	// The module records failures rather than returning them, so a
 	// diagnostic is a difference: an error that was not there before this
@@ -154,4 +157,30 @@ func gasKind(k arm64.SectionKind) gas.SectionKind {
 		return gas.BSS
 	}
 	return gas.Data
+}
+
+// pstateField rewrites `msr spsel, #1` to use the PSTATE field rather than
+// the system register of the same name.
+//
+// SPSel is spelled one way and means two things: `mrs x0, spsel` reads the
+// system register, and `msr spsel, #1` writes the process-state field. The
+// operand parser cannot tell them apart, because what distinguishes them is
+// the operand *after* it — an immediate means the field, a register means the
+// register. So the decision is made here, where both are in hand, and only
+// for the mnemonic where the ambiguity exists.
+func pstateField(name string, ops []any) []any {
+	if name != "msr" || len(ops) != 2 {
+		return ops
+	}
+	if _, isImm := ops[1].(operand.Imm); !isImm {
+		return ops
+	}
+	r, ok := ops[0].(reg.Sys)
+	if !ok {
+		return ops
+	}
+	if f, ok := operand.LookupPState(reg.Name(r)); ok {
+		ops[0] = f
+	}
+	return ops
 }

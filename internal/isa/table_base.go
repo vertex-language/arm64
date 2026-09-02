@@ -499,6 +499,14 @@ func init() {
 			Dst(ClassX, Rt).SysReg(SysReg).Name("Mrs"),
 		L("msr", 0xd5100000, 0xfff00000).
 			SysReg(SysReg).Src(ClassX, Rt).Name("MsrReg"),
+
+		// MSR (immediate): a named piece of process state and four bits to
+		// write into it. It is how interrupts are masked and unmasked, and
+		// it is a different instruction from the register form rather than
+		// another operand shape of it — the field is op1 and op2 and there
+		// is no register anywhere in the word.
+		L("msr", 0xd500401f, 0xfff8f01f).
+			PState().Imm(CRm).Name("MsrImm"),
 	)
 
 	// ---- The architecture's aliases ----

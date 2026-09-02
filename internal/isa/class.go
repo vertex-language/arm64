@@ -77,6 +77,7 @@ const (
 	ClassExtend  // UXTB…SXTX decorating a register operand
 	ClassSys     // a system register
 	ClassPrfOp   // PLDL1KEEP and the rest
+	ClassPState  // DAIFSet, DAIFClr, SPSel — MSR (immediate)'s field
 	ClassBarrier // SY, ISH, LD, ST …
 
 	classCount
@@ -121,6 +122,7 @@ var classInfo = [classCount]struct {
 	ClassExtend:  {"extend", reg.FileNone, 0, false},
 	ClassSys:     {"sysreg", reg.FileNone, 64, false},
 	ClassPrfOp:   {"prfop", reg.FileNone, 0, false},
+	ClassPState:  {"pstatefield", reg.FileNone, 0, false},
 	ClassBarrier: {"option", reg.FileNone, 0, false},
 }
 

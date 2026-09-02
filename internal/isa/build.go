@@ -76,6 +76,13 @@ func (f *Form) MemIdx(bits uint16, base Field) *Form {
 	return f
 }
 
+// PState adds an MSR (immediate) field operand, which occupies op1 and op2
+// rather than a field of its own.
+func (f *Form) PState() *Form {
+	f.Attrs |= AttrPState
+	return f.slot(ClassPState, RoleModifier, F(0, 0))
+}
+
 // Target adds a branch or address destination.
 func (f *Form) Target(fld Field) *Form {
 	f.Attrs |= AttrBranch

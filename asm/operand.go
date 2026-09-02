@@ -98,6 +98,18 @@ func (t *target) namedOperand(p *gas.Parser, tok gas.Token) (any, bool) {
 		p.Take()
 		return pf, true
 	}
+	// A PSTATE field is looked up after the registers, and SPSel is why:
+	// `msr spsel, #1` names the field and `mrs x0, spsel` names the system
+	// register, and they are the same word in source. Registers win, and
+	// the field is reached only where no register has that name — which is
+	// what makes DAIFSet and DAIFClr work and SPSel resolve as the
+	// register. The MSR (immediate) row takes the field, so a caller
+	// writing the immediate form gets a form error naming what it does
+	// take, rather than a silent wrong encoding.
+	if ps, ok := operand.LookupPState(lower); ok {
+		p.Take()
+		return ps, true
+	}
 	return nil, false
 }
 

@@ -70,6 +70,11 @@ const (
 	// encoding from the scaled-immediate form, not a different operand of
 	// the same one.
 	AttrRegOffset
+
+	// AttrPState marks MSR (immediate), whose field operand fills op1 and
+	// op2 — two fields either side of the immediate rather than one of its
+	// own, which is why the slot names no field and this says so instead.
+	AttrPState
 )
 
 // Form is one declared encoding of one mnemonic.

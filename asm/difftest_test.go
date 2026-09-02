@@ -257,6 +257,13 @@ var lines = []string{
 	"brk #0",
 	"svc #0",
 	"mrs x0, tpidr_el0",
+	"mrs x0, sp_el0",
+	"msr sp_el0, x0",
+	"msr daifset, #2",
+	"msr daifclr, #2",
+	"msr spsel, #1",
+	"mrs x0, daif",
+	"msr daif, x0",
 	"msr tpidr_el0, x1",
 	"adr x0, 1f",
 }

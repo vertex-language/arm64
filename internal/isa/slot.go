@@ -144,6 +144,7 @@ var (
 	Q    = F(30, 1)
 	Size = F(22, 2)
 	CRm  = F(8, 4)
+	Op1  = F(16, 3)
 	Op2  = F(5, 3)
 
 	// ADR and ADRP: the value's low two bits sit above its high nineteen.
