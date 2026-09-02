@@ -57,6 +57,13 @@ type labelDelta struct {
 	from, to string
 }
 
+// Module is the module this section belongs to.
+//
+// It is here for a caller holding a section and needing the module-level
+// operations that go with it — Extern and Alias, which an assembler reaches
+// for on behalf of text it is assembling into this very section.
+func (s *Section) Module() *Module { return s.m }
+
 func (s *Section) Kind() SectionKind { return s.kind }
 func (s *Section) Name() string      { return s.name }
 func (s *Section) Index() int        { return s.index }

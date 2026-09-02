@@ -74,6 +74,12 @@ type Options struct {
 	// Features gates which instructions exist. The zero value is the
 	// parent package's default set.
 	Features arm64.FeatureSet
+
+	// LabelPrefix distinguishes the names generated for `1:` and `.` in one
+	// assembly from another's. It matters when several fragments land in one
+	// section, which is what happens to an inline asm template expanded twice
+	// in one function.
+	LabelPrefix string
 }
 
 // Assemble assembles src into a finished object.
@@ -100,9 +106,52 @@ func AssembleInto(m *arm64.Module, src string, opts Options) (*arm64.Module, err
 		}
 	}
 	e := newEmitter(m)
-	if err := gas.Parse(opts.File, src, &target{e: e}, e); err != nil {
+	if err := gas.Parse(src, &target{e: e}, e, gas.Options{
+		File: opts.File, LocalPrefix: opts.LabelPrefix,
+	}); err != nil {
 		return m, err
 	}
 	e.declareExterns()
 	return m, m.Err()
+}
+
+// AssembleFragment assembles src into a section that is already open, at the
+// offset it has already reached.
+//
+// This is the entry point for inline assembly: the text is the expansion of
+// one template, it belongs in the middle of a function this package did not
+// write, and it must not start by switching to `.text` and losing wherever the
+// caller actually was. A fragment may still switch sections — a template
+// containing `.pushsection` is ordinary in kernel source — and is expected to
+// switch back, the same as in a file.
+//
+// The caller supplies LabelPrefix. Two expansions of one template in one
+// function both contain the same `1:`, and they are different labels.
+func AssembleFragment(sec *arm64.Section, src string, opts Options) error {
+	m := sec.Module()
+	e := newEmitter(m)
+	e.sec = sec
+	err := gas.Parse(src, &target{e: e}, e, gas.Options{
+		File:        opts.File,
+		LocalPrefix: opts.LabelPrefix,
+		Section:     sec.Name(),
+		Kind:        gasKind(sec.Kind()),
+	})
+	if err != nil {
+		return err
+	}
+	e.declareExterns()
+	return m.Err()
+}
+
+func gasKind(k arm64.SectionKind) gas.SectionKind {
+	switch k {
+	case arm64.Text:
+		return gas.Text
+	case arm64.ROData:
+		return gas.ROData
+	case arm64.BSS:
+		return gas.BSS
+	}
+	return gas.Data
 }
