@@ -132,6 +132,80 @@ func diffCases() []diffCase {
 		{"cmp x0,#4", "cmp x0, #4", func(t *arm64.Section) { t.CmpImm64(x0, 4) }},
 		{"cmn x0,x1", "cmn x0, x1", func(t *arm64.Section) { t.CmnShifted64(x0, x1) }},
 		{"neg x0,x1", "neg x0, x1", func(t *arm64.Section) { t.NegShifted64(x0, x1) }},
+
+		// The 32-bit halves of the same aliases, and the two the table had
+		// no row for at either width.
+		{"tst w0,w1", "tst w0, w1", func(t *arm64.Section) { t.TstShifted32(w0, w1) }},
+		{"tst w0,#0xff", "tst w0, #0xff", func(t *arm64.Section) { t.TstImm32(w0, 0xff) }},
+		{"cmp w0,w1", "cmp w0, w1", func(t *arm64.Section) { t.CmpShifted32(w0, w1) }},
+		{"cmp w0,#4", "cmp w0, #4", func(t *arm64.Section) { t.CmpImm32(w0, 4) }},
+		{"cmn w0,w1", "cmn w0, w1", func(t *arm64.Section) { t.CmnShifted32(w0, w1) }},
+		{"cmn x0,#4", "cmn x0, #4", func(t *arm64.Section) { t.CmnImm64(x0, 4) }},
+		{"cmn w0,#4", "cmn w0, #4", func(t *arm64.Section) { t.CmnImm32(w0, 4) }},
+		{"neg w0,w1", "neg w0, w1", func(t *arm64.Section) { t.NegShifted32(w0, w1) }},
+		{"mvn x0,x1", "mvn x0, x1", func(t *arm64.Section) { t.MvnShifted64(x0, x1) }},
+		{"mvn w0,w1", "mvn w0, w1", func(t *arm64.Section) { t.MvnShifted32(w0, w1) }},
+		{"mvn x0,x1,lsl2", "mvn x0, x1, lsl #2", func(t *arm64.Section) {
+			t.MvnShifted64(x0, x1, arm64.Shifted(arm64.LSL, 2))
+		}},
+
+		// The shifts by an immediate at 32 bits, where the computed immr:imms
+		// pair is against a width of 32 and not 64.
+		{"lsl w0,w1,#3", "lsl w0, w1, #3", func(t *arm64.Section) { t.LslImm32(w0, w1, 3) }},
+		{"lsr w0,w1,#7", "lsr w0, w1, #7", func(t *arm64.Section) { t.LsrImm32(w0, w1, 7) }},
+		{"asr w0,w1,#9", "asr w0, w1, #9", func(t *arm64.Section) { t.AsrImm32(w0, w1, 9) }},
+
+		// The shifts by a register under their assembly-language names.
+		{"lsl x0,x1,x2 (alias)", "lsl x0, x1, x2", func(t *arm64.Section) { t.LslReg64(x0, x1, x2) }},
+		{"lsr w0,w1,w2 (alias)", "lsr w0, w1, w2", func(t *arm64.Section) { t.LsrReg32(w0, w1, w2) }},
+		{"asr x0,x1,x2 (alias)", "asr x0, x1, x2", func(t *arm64.Section) { t.AsrReg64(x0, x1, x2) }},
+		{"ror w0,w1,w2 (alias)", "ror w0, w1, w2", func(t *arm64.Section) { t.RorReg32(w0, w1, w2) }},
+
+		// The extend aliases, whose 64-bit destinations take a W source.
+		{"sxtb w0,w1", "sxtb w0, w1", func(t *arm64.Section) { t.Sxtb32(w0, w1) }},
+		{"sxtb x0,w1", "sxtb x0, w1", func(t *arm64.Section) { t.Sxtb64(x0, w1) }},
+		{"sxth w0,w1", "sxth w0, w1", func(t *arm64.Section) { t.Sxth32(w0, w1) }},
+		{"sxth x0,w1", "sxth x0, w1", func(t *arm64.Section) { t.Sxth64(x0, w1) }},
+		{"sxtw x0,w1", "sxtw x0, w1", func(t *arm64.Section) { t.Sxtw64(x0, w1) }},
+		{"uxtb w0,w1", "uxtb w0, w1", func(t *arm64.Section) { t.Uxtb32(w0, w1) }},
+		{"uxth w0,w1", "uxth w0, w1", func(t *arm64.Section) { t.Uxth32(w0, w1) }},
+
+		// A prefetch, whose first operand is a hint and not a register.
+		{"prfm pldl1keep,[x0]", "prfm pldl1keep, [x0]", func(t *arm64.Section) {
+			t.PrfmImm(arm64.PLDL1KEEP, arm64.Mem64(x0))
+		}},
+		{"prfm pstl2strm,[x1,#16]", "prfm pstl2strm, [x1, #16]", func(t *arm64.Section) {
+			t.PrfmImm(arm64.PSTL2STRM, arm64.Mem64(x1).Off(16))
+		}},
+
+		// Bitfield extraction, whose second immediate is computed from the
+		// first, and the rotate that names one source twice.
+		{"ubfx x0,x1,#4,#8", "ubfx x0, x1, #4, #8", func(t *arm64.Section) { t.Ubfx64(x0, x1, 4, 8) }},
+		{"ubfx w0,w1,#2,#3", "ubfx w0, w1, #2, #3", func(t *arm64.Section) { t.Ubfx32(w0, w1, 2, 3) }},
+		{"sbfx x0,x1,#4,#8", "sbfx x0, x1, #4, #8", func(t *arm64.Section) { t.Sbfx64(x0, x1, 4, 8) }},
+		{"sbfx w0,w1,#1,#5", "sbfx w0, w1, #1, #5", func(t *arm64.Section) { t.Sbfx32(w0, w1, 1, 5) }},
+		{"ror x0,x1,#5", "ror x0, x1, #5", func(t *arm64.Section) { t.RorImm64(x0, x1, 5) }},
+		{"ror w0,w1,#3", "ror w0, w1, #3", func(t *arm64.Section) { t.RorImm32(w0, w1, 3) }},
+
+		// Conditional compare, at both widths and with both operand shapes.
+		{"ccmp x0,x1,#0,eq", "ccmp x0, x1, #0, eq", func(t *arm64.Section) {
+			t.CcmpReg64(x0, x1, 0, arm64.EQ)
+		}},
+		{"ccmp w0,w1,#3,ne", "ccmp w0, w1, #3, ne", func(t *arm64.Section) {
+			t.CcmpReg32(w0, w1, 3, arm64.NE)
+		}},
+		{"ccmp x0,#5,#0,eq", "ccmp x0, #5, #0, eq", func(t *arm64.Section) {
+			t.CcmpImm64(x0, 5, 0, arm64.EQ)
+		}},
+		{"ccmp w0,#5,#7,lt", "ccmp w0, #5, #7, lt", func(t *arm64.Section) {
+			t.CcmpImm32(w0, 5, 7, arm64.LT)
+		}},
+		{"ccmn x0,x1,#0,eq", "ccmn x0, x1, #0, eq", func(t *arm64.Section) {
+			t.CcmnReg64(x0, x1, 0, arm64.EQ)
+		}},
+		{"ccmn w0,#5,#7,lt", "ccmn w0, #5, #7, lt", func(t *arm64.Section) {
+			t.CcmnImm32(w0, 5, 7, arm64.LT)
+		}},
 		{"mov x0,x1", "mov x0, x1", func(t *arm64.Section) { t.MovReg64(x0, x1) }},
 		{"mov w0,w1", "mov w0, w1", func(t *arm64.Section) { t.MovReg32(w0, w1) }},
 		{"mov x0,sp", "mov x0, sp", func(t *arm64.Section) { t.MovSp64(x0, arm64.SP) }},

@@ -31,6 +31,66 @@ func (s *Section) Csinv64(rd, rn, rm reg.X, c Cond) { s.inst(csinv64, rd, rn, rm
 func (s *Section) Csneg32(rd, rn, rm reg.W, c Cond) { s.inst(csneg32, rd, rn, rm, c) }
 func (s *Section) Csneg64(rd, rn, rm reg.X, c Cond) { s.inst(csneg64, rd, rn, rm, c) }
 
+// ---- Conditional compare ----------------------------------------------------
+//
+// A compare that happens only when its condition holds, and writes the flags
+// it was given when it does not. The nzcv operand is that answer: four bits
+// standing in for the comparison that was not made, which is how a chain of
+// C's && and || becomes straight-line code.
+
+var (
+	ccmpReg32 = form("CcmpReg32")
+	ccmpReg64 = form("CcmpReg64")
+	ccmpImm32 = form("CcmpImm32")
+	ccmpImm64 = form("CcmpImm64")
+	ccmnReg32 = form("CcmnReg32")
+	ccmnReg64 = form("CcmnReg64")
+	ccmnImm32 = form("CcmnImm32")
+	ccmnImm64 = form("CcmnImm64")
+)
+
+// CcmpReg32 emits CCMP Wn, Wm, #nzcv, cond.
+func (s *Section) CcmpReg32(rn, rm reg.W, nzcv uint8, c Cond) {
+	s.inst(ccmpReg32, rn, rm, uint64(nzcv), c)
+}
+
+// CcmpReg64 emits CCMP Xn, Xm, #nzcv, cond.
+func (s *Section) CcmpReg64(rn, rm reg.X, nzcv uint8, c Cond) {
+	s.inst(ccmpReg64, rn, rm, uint64(nzcv), c)
+}
+
+// CcmpImm32 emits CCMP Wn, #imm, #nzcv, cond. The immediate is five bits
+// unsigned, which is the whole of what this form compares against.
+func (s *Section) CcmpImm32(rn reg.W, imm uint8, nzcv uint8, c Cond) {
+	s.inst(ccmpImm32, rn, uint64(imm), uint64(nzcv), c)
+}
+
+// CcmpImm64 emits CCMP Xn, #imm, #nzcv, cond.
+func (s *Section) CcmpImm64(rn reg.X, imm uint8, nzcv uint8, c Cond) {
+	s.inst(ccmpImm64, rn, uint64(imm), uint64(nzcv), c)
+}
+
+// CcmnReg32 emits CCMN Wn, Wm, #nzcv, cond — the same, comparing against the
+// negation.
+func (s *Section) CcmnReg32(rn, rm reg.W, nzcv uint8, c Cond) {
+	s.inst(ccmnReg32, rn, rm, uint64(nzcv), c)
+}
+
+// CcmnReg64 emits CCMN Xn, Xm, #nzcv, cond.
+func (s *Section) CcmnReg64(rn, rm reg.X, nzcv uint8, c Cond) {
+	s.inst(ccmnReg64, rn, rm, uint64(nzcv), c)
+}
+
+// CcmnImm32 emits CCMN Wn, #imm, #nzcv, cond.
+func (s *Section) CcmnImm32(rn reg.W, imm uint8, nzcv uint8, c Cond) {
+	s.inst(ccmnImm32, rn, uint64(imm), uint64(nzcv), c)
+}
+
+// CcmnImm64 emits CCMN Xn, #imm, #nzcv, cond.
+func (s *Section) CcmnImm64(rn reg.X, imm uint8, nzcv uint8, c Cond) {
+	s.inst(ccmnImm64, rn, uint64(imm), uint64(nzcv), c)
+}
+
 // ---- Alias: set on condition ------------------------------------------------
 
 var cset64 = form("Cset64")

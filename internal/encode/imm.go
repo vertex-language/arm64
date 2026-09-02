@@ -41,7 +41,7 @@ type immResult struct {
 // explicitShift reports whether the caller wrote the form's shift operand. It
 // changes the rule rather than adding to it: movz x0, #1, lsl #16 states its
 // own halfword position, and the search that would find one is wrong to run.
-func encodeImm(f *isa.Form, i int, s isa.Slot, v val, explicitShift bool) (immResult, error) {
+func encodeImm(f *isa.Form, i int, s isa.Slot, v val, explicitShift bool, prev int64) (immResult, error) {
 	bits := s.Field.Width()
 
 	switch s.Imm {
@@ -142,8 +142,15 @@ func encodeImm(f *isa.Form, i int, s isa.Slot, v val, explicitShift bool) (immRe
 		return immResult{}, &UnsupportedError{f, "a scaled immediate of " + plural(bits)}
 
 	case isa.ImmBitPos:
-		if v.imm < 0 || v.imm > 63 {
-			return immResult{}, &RangeError{f, i, v.imm, "a bit number from 0 to 63"}
+		// Against the form's own width, not a constant 63: TBZ on a W
+		// register can only name a bit the register has, and the field the
+		// 32-bit row declares has no room for a wider one anyway. Checking
+		// here is what makes that a range error naming the limit rather than
+		// a silently truncated bit number.
+		max := int64(FormWidth(f)) - 1
+		if v.imm < 0 || v.imm > max {
+			return immResult{}, &RangeError{f, i, v.imm,
+				"a bit number from 0 to " + strconv.FormatInt(max, 10)}
 		}
 		return immResult{value: uint64(v.imm)}, nil
 
@@ -187,6 +194,27 @@ func encodeImm(f *isa.Form, i int, s isa.Slot, v val, explicitShift bool) (immRe
 			value:   uint64(v.imm),
 			sibling: w - 1, hasSibling: true, siblingClass: isa.ClassImm,
 		}, nil
+
+	case isa.ImmBitfieldLsb:
+		w := int64(FormWidth(f))
+		if v.imm < 0 || v.imm >= w {
+			return immResult{}, &RangeError{f, i, v.imm,
+				"a bit position from 0 to " + strconv.FormatInt(w-1, 10)}
+		}
+		return immResult{value: uint64(v.imm)}, nil
+
+	case isa.ImmBitfieldWidth:
+		// prev is the lsb this width is measured from, and the field has to
+		// end inside the register: a five-bit field starting at bit 30 of a
+		// W register is not a narrower field, it is a different instruction
+		// the architecture does not have.
+		w := int64(FormWidth(f))
+		if v.imm < 1 || prev+v.imm > w {
+			return immResult{}, &RangeError{f, i, v.imm,
+				"a width from 1 to " + strconv.FormatInt(w-prev, 10) +
+					" for a field starting at bit " + strconv.FormatInt(prev, 10)}
+		}
+		return immResult{value: uint64(prev + v.imm - 1)}, nil
 	}
 
 	return immResult{}, &UnsupportedError{f, "an immediate rule this encoder does not know"}

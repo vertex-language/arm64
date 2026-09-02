@@ -48,6 +48,16 @@ const (
 	// doors producing different instructions for one mnemonic, which is the
 	// one thing sharing an encoder is supposed to make impossible.
 	AttrInvertCond
+
+	// AttrRnIntoRm marks a form whose second source register field holds a
+	// copy of its first.
+	//
+	// ROR (immediate) is the reason, and it is the same kind of fact as
+	// AttrInvertCond: the alias is EXTR with one source named twice, so a
+	// row that stops at three operands would leave Rm holding register zero
+	// and rotate the wrong pair. Naming it here rather than in a typed
+	// helper is what keeps the assembler and the helper emitting one word.
+	AttrRnIntoRm
 )
 
 // Form is one declared encoding of one mnemonic.

@@ -137,9 +137,15 @@ func (s *Section) SubsExt64(rd reg.X, rn RegSP64, rm any, ext ...ExtendOp) {
 
 var (
 	cmpShifted64 = form("CmpShifted64")
+	cmpShifted32 = form("CmpShifted32")
 	cmpImm64     = form("CmpImm64")
+	cmpImm32     = form("CmpImm32")
 	cmnShifted64 = form("CmnShifted64")
+	cmnShifted32 = form("CmnShifted32")
+	cmnImm64     = form("CmnImm64")
+	cmnImm32     = form("CmnImm32")
 	negShifted64 = form("NegShifted64")
+	negShifted32 = form("NegShifted32")
 )
 
 // CmpShifted64 emits CMP Xn, Xm{, shift} — SUBS with the result discarded.
@@ -160,6 +166,36 @@ func (s *Section) CmnShifted64(rn, rm reg.X, shift ...ShiftOp) {
 // NegShifted64 emits NEG Xd, Xm{, shift} — SUB with Xn pinned to XZR.
 func (s *Section) NegShifted64(rd, rm reg.X, shift ...ShiftOp) {
 	s.inst(negShifted64, append([]any{rd, rm}, opt(shift)...)...)
+}
+
+// CmpShifted32 emits CMP Wn, Wm{, shift}.
+func (s *Section) CmpShifted32(rn, rm reg.W, shift ...ShiftOp) {
+	s.inst(cmpShifted32, append([]any{rn, rm}, opt(shift)...)...)
+}
+
+// CmpImm32 emits CMP Wn|WSP, #imm{, shift}.
+func (s *Section) CmpImm32(rn RegSP32, imm int64, shift ...ShiftOp) {
+	s.inst(cmpImm32, append([]any{rn, imm}, opt(shift)...)...)
+}
+
+// CmnShifted32 emits CMN Wn, Wm{, shift}.
+func (s *Section) CmnShifted32(rn, rm reg.W, shift ...ShiftOp) {
+	s.inst(cmnShifted32, append([]any{rn, rm}, opt(shift)...)...)
+}
+
+// CmnImm64 emits CMN Xn|SP, #imm{, shift} — ADDS with the result discarded.
+func (s *Section) CmnImm64(rn RegSP64, imm int64, shift ...ShiftOp) {
+	s.inst(cmnImm64, append([]any{rn, imm}, opt(shift)...)...)
+}
+
+// CmnImm32 emits CMN Wn|WSP, #imm{, shift}.
+func (s *Section) CmnImm32(rn RegSP32, imm int64, shift ...ShiftOp) {
+	s.inst(cmnImm32, append([]any{rn, imm}, opt(shift)...)...)
+}
+
+// NegShifted32 emits NEG Wd, Wm{, shift}.
+func (s *Section) NegShifted32(rd, rm reg.W, shift ...ShiftOp) {
+	s.inst(negShifted32, append([]any{rd, rm}, opt(shift)...)...)
 }
 
 // ---- Widening multiply -----------------------------------------------------

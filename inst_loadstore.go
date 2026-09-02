@@ -128,3 +128,13 @@ func (s *Section) LdrshImm32(rt reg.W, m Mem) { s.inst(ldrshImm32, rt, m) }
 
 // LdrshImm64 emits LDRSH Xt, [Xn|SP{, #imm}].
 func (s *Section) LdrshImm64(rt reg.X, m Mem) { s.inst(ldrshImm64, rt, m) }
+
+// ---- Prefetch ---------------------------------------------------------------
+
+var prfmImm = form("PrfmImm")
+
+// PrfmImm emits PRFM <prfop>, [Xn{, #imm}]: a hint, not a load. The operand
+// names what to prefetch, into which cache level, and whether to keep it —
+// see operand.PrfOp — and occupies the field a load's destination register
+// would.
+func (s *Section) PrfmImm(op PrfOp, addr Mem) { s.inst(prfmImm, op, addr) }

@@ -101,6 +101,11 @@ var (
 	Rt2 = F(10, 5)
 	Rs  = F(16, 5)
 
+	// The five bits at Rm's position, which CCMP and CCMN (immediate) use
+	// for a value rather than a register. Same bits as Rm and a different
+	// meaning, which is why it is named apart.
+	Imm5 = F(16, 5)
+
 	Imm6  = F(10, 6)
 	Imm7  = F(15, 7)
 	Imm9  = F(12, 9)
@@ -141,6 +146,12 @@ var (
 
 	// TBZ and TBNZ: the bit number is split across the word.
 	BitPos = FSplit(19, 5, 31, 1)
+
+	// The same bit number on the 32-bit form, where b5 is necessarily zero:
+	// a W register has no bit 32 to test. Naming the low five bits alone is
+	// what makes that a range error at the operand rather than a word that
+	// encodes and means the other width.
+	BitPos5 = F(19, 5)
 
 	// MRS and MSR: o0:op1:CRn:CRm:op2, contiguous but read as one system
 	// register number in the order reg.Sys packs it, minus op0's high bit.
@@ -239,6 +250,16 @@ const (
 	// opcode the row carries — the immr:imms arithmetic is identical.
 	ImmShiftRight
 
+	// ImmBitfieldLsb and ImmBitfieldWidth are UBFX and SBFX's pair: the
+	// source says where the field starts and how wide it is, and UBFM wants
+	// where it starts and where it ends. So immr = lsb, and imms = lsb +
+	// width - 1 — which is the one rule in this table that reads an operand
+	// other than its own. It has to: neither number alone determines imms,
+	// and the architecture writes the pair this way because a field's width
+	// is what a programmer knows.
+	ImmBitfieldLsb
+	ImmBitfieldWidth
+
 	immKindCount
 )
 
@@ -279,6 +300,10 @@ func (k ImmKind) String() string {
 		return "shiftleft"
 	case ImmShiftRight:
 		return "shiftright"
+	case ImmBitfieldLsb:
+		return "bitfieldlsb"
+	case ImmBitfieldWidth:
+		return "bitfieldwidth"
 	}
 	return "none"
 }

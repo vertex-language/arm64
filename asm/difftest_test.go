@@ -43,8 +43,15 @@ var lines = []string{
 	"subs x3, x4, x5",
 	"sub x9, x10, x11, asr #7",
 	"neg x0, x1",
+	"neg w0, w1",
 	"cmp x0, x1",
+	"cmp w0, w1",
+	"cmp w0, w1, lsl #2",
+	"cmp w0, #4",
 	"cmn x2, x3",
+	"cmn w2, w3",
+	"cmn x0, #4",
+	"cmn w0, #4",
 
 	// Logical.
 	"and x6, x7, #0xff",
@@ -52,6 +59,11 @@ var lines = []string{
 	"eor x4, x5, x6, ror #12",
 	"and x0, x1, x2, lsl #1",
 	"tst x5, x6",
+	"tst w5, w6",
+	"tst w0, #0xff",
+	"mvn x3, x4",
+	"mvn w3, w4",
+	"mvn x3, x4, lsl #2",
 
 	// Moves.
 	"mov x0, x1",
@@ -66,6 +78,26 @@ var lines = []string{
 
 	// Shifts and bitfield.
 	"lsl x0, x1, #4",
+	"lsl w0, w1, #3",
+	"lsr w2, w3, #7",
+	"asr w4, w5, #9",
+	"lsl x0, x1, x2",
+	"lsr w0, w1, w2",
+	"asr x4, x5, x6",
+	"ror w0, w1, w2",
+	"sxtb w0, w1",
+	"sxtb x0, w1",
+	"sxth w0, w1",
+	"sxth x0, w1",
+	"sxtw x0, w1",
+	"uxtb w2, w3",
+	"uxth w2, w3",
+	"ubfx x0, x1, #4, #8",
+	"ubfx w0, w1, #2, #3",
+	"sbfx w2, w3, #1, #5",
+	"sbfx x0, x1, #4, #8",
+	"ror w7, w8, #3",
+	"ror x0, x1, #5",
 
 	// Multiply and divide.
 	"mul x0, x1, x2",
@@ -87,6 +119,12 @@ var lines = []string{
 	"csinc w3, w4, w5, ne",
 	"cset x6, lt",
 	"csneg x7, x8, x9, ge",
+	"ccmp x0, x1, #0, eq",
+	"ccmp w0, w1, #3, ne",
+	"ccmp x0, #5, #0, eq",
+	"ccmp w0, #5, #7, lt",
+	"ccmn x0, x1, #0, eq",
+	"ccmn w0, #5, #7, lt",
 
 	// Addressing: the whole point of this file.
 	"ldr x0, [x1]",
@@ -103,6 +141,8 @@ var lines = []string{
 	"stp w0, w1, [x2, #8]",
 	"ldp x3, x4, [x5, #16]",
 	"ldr x0, [sp]",
+	"prfm pldl1keep, [x0]",
+	"prfm pstl2strm, [x1, #16]",
 
 	// Branches.
 	"b 1f",
@@ -117,6 +157,8 @@ var lines = []string{
 	"cbz x0, 1f",
 	"cbnz w1, 1f",
 	"tbz x2, #3, 1f",
+	"tbnz w4, #5, 1f",
+	"tbz w4, #5, 1f",
 
 	// Floating point.
 	"fadd s0, s1, s2",
@@ -153,26 +195,16 @@ var lines = []string{
 
 // tableGaps are lines this package parses correctly and the parent package's
 // ISA table cannot yet encode: mnemonics it declares no row for, and widths it
-// declares only one of. They are listed rather than deleted because the list is
-// the useful artifact — it is exactly the work the table needs, discovered by
-// pointing a parser at ordinary assembly, and it will shrink as rows are added.
+// declares only one of.
 //
-// Nothing here is a parser defect. Each one reaches Section.Emit with the right
-// operand types and is turned away by the table.
-var tableGaps = []string{
-	"cmp w0, #4",           // only the 64-bit alias is declared
-	"mvn x3, x4",           // alias for orn with the zero register
-	"lsr w2, w3, #7",       // the immediate form is ubfm; only the register form is declared
-	"asr x4, x5, x6",       // the register form is asrv; only the immediate form is declared
-	"ror w7, w8, #3",       // alias for extr with one source twice
-	"ubfx x0, x1, #4, #8",  // alias for ubfm
-	"sbfx w2, w3, #1, #5",  // alias for sbfm
-	"sxtw x0, w1",          // alias for sbfm
-	"uxtb w2, w3",          // alias for ubfm
-	"ccmp x0, x1, #0, eq",  // conditional compare, no row
-	"tbnz w4, #5, 1f",      // only the 64-bit form is declared
-	"prfm pldl1keep, [x0]", // no row, though the prefetch operand type exists
-}
+// The list is empty, and it is kept because it is how it got that way. It held
+// twelve entries — the 32-bit halves of aliases declared only at 64, the
+// bitfield and extend aliases, the register forms of the shifts, conditional
+// compare, and a prefetch — each discovered by pointing a parser at ordinary
+// assembly rather than by reading the ARM ARM front to back. The test below
+// fails when an entry starts working, which is what kept the list honest as
+// the rows landed; it will do the same for whatever the next parser finds.
+var tableGaps = []string{}
 
 // TestTableGapsStillGap keeps the list above honest: an entry that starts
 // working is one to move up into lines, and a silent list would never say so.

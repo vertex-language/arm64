@@ -2,6 +2,7 @@ package arm64_test
 
 import (
 	"encoding/binary"
+	"strings"
 	"testing"
 
 	"github.com/vertex-language/arm64"
@@ -60,5 +61,65 @@ func TestLabelDiffUndefined(t *testing.T) {
 	s.LabelDiff("nowhere", "here")
 	if _, err := m.Finalize(); err == nil {
 		t.Error("Finalize should refuse a delta to an undefined label")
+	}
+}
+
+// TBZ and TBNZ at both widths, against the words clang produces for the same
+// two lines with the label immediately after them.
+//
+// Here rather than in difftest_test.go because these take a branch target,
+// and that harness assembles its cases as one straight run of instructions
+// with no label for a target to name.
+func TestTestBitBranchWidths(t *testing.T) {
+	m := arm64.NewModule()
+	s := m.Section(arm64.Text)
+	s.Label("start", arm64.Global, arm64.Func)
+	s.Tbnz32(arm64.W4, 5, arm64.Label("after"))
+	s.Tbz64(arm64.X2, 40, arm64.Label("after"))
+	s.Label("after")
+	s.EndLabel("start")
+
+	o, err := m.Finalize()
+	if err != nil {
+		t.Fatalf("Finalize: %v", err)
+	}
+	data := o.SectionNamed(".text").Bytes()
+
+	// clang, for "tbnz w4, #5, 1f" and "tbz x2, #40, 1f" with 1: after both.
+	want := []uint32{0x37280044, 0xb6400022}
+	for i, w := range want {
+		if got := binary.LittleEndian.Uint32(data[i*4:]); got != w {
+			t.Errorf("word %d = %#08x, want %#08x", i, got, w)
+		}
+	}
+}
+
+// A bit number the register does not have is a range error, not a word that
+// silently means the other width.
+func TestTestBitBranchBitOutOfRange(t *testing.T) {
+	m := arm64.NewModule()
+	s := m.Section(arm64.Text)
+	s.Label("start", arm64.Global, arm64.Func)
+	s.Tbnz32(arm64.W4, 40, arm64.Label("start"))
+
+	if err := m.Err(); err == nil {
+		t.Fatal("bit 40 of a W register was accepted")
+	}
+}
+
+// A bitfield that would run off the end of the register is a range error
+// naming what would fit, not a truncated imms field.
+func TestBitfieldExtractWidth(t *testing.T) {
+	m := arm64.NewModule()
+	s := m.Section(arm64.Text)
+	s.Label("start", arm64.Global, arm64.Func)
+	s.Ubfx32(arm64.W0, arm64.W1, 30, 5) // bits 30..34 of a 32-bit register
+
+	err := m.Err()
+	if err == nil {
+		t.Fatal("a five-bit field starting at bit 30 of a W register was accepted")
+	}
+	if !strings.Contains(err.Error(), "starting at bit 30") {
+		t.Errorf("error %q does not say where the field started", err)
 	}
 }

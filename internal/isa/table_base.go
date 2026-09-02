@@ -223,6 +223,38 @@ func init() {
 			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).Name("Umulh"),
 
 		// ---- Conditional select and compare ----
+		// ---- Conditional compare ----
+		//
+		// A compare that happens only if the condition holds, and writes the
+		// four immediate flags when it does not. That is what makes a chain
+		// of C's && and || into straight-line code, and it is why the NZCV
+		// operand is a value and not a modifier: it is the answer for the
+		// half of the chain this instruction does not evaluate.
+		L("ccmp", 0xfa400000, 0xffe00c10).
+			Src(ClassX, Rn).Src(ClassX, Rm).Imm(Nzcv).Cnd(CondHi).
+			Flags().Name("CcmpReg64"),
+		L("ccmp", 0x7a400000, 0x7fe00c10).
+			Src(ClassW, Rn).Src(ClassW, Rm).Imm(Nzcv).Cnd(CondHi).
+			Flags().Name("CcmpReg32"),
+		L("ccmp", 0xfa400800, 0xffe00c10).
+			Src(ClassX, Rn).Imm(Imm5).Imm(Nzcv).Cnd(CondHi).
+			Flags().Name("CcmpImm64"),
+		L("ccmp", 0x7a400800, 0x7fe00c10).
+			Src(ClassW, Rn).Imm(Imm5).Imm(Nzcv).Cnd(CondHi).
+			Flags().Name("CcmpImm32"),
+		L("ccmn", 0xba400000, 0xffe00c10).
+			Src(ClassX, Rn).Src(ClassX, Rm).Imm(Nzcv).Cnd(CondHi).
+			Flags().Name("CcmnReg64"),
+		L("ccmn", 0x3a400000, 0x7fe00c10).
+			Src(ClassW, Rn).Src(ClassW, Rm).Imm(Nzcv).Cnd(CondHi).
+			Flags().Name("CcmnReg32"),
+		L("ccmn", 0xba400800, 0xffe00c10).
+			Src(ClassX, Rn).Imm(Imm5).Imm(Nzcv).Cnd(CondHi).
+			Flags().Name("CcmnImm64"),
+		L("ccmn", 0x3a400800, 0x7fe00c10).
+			Src(ClassW, Rn).Imm(Imm5).Imm(Nzcv).Cnd(CondHi).
+			Flags().Name("CcmnImm32"),
+
 		L("csel", 0x1a800000, 0x7fe00c00).
 			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).Cnd(CondHi).Name("Csel32"),
 		L("csel", 0x9a800000, 0xffe00c00).
@@ -268,9 +300,16 @@ func init() {
 		L("cbnz", 0x35000000, 0x7f000000).Src(ClassW, Rt).Target(Imm19).Kind(ImmBranch).Name("Cbnz32"),
 		L("cbnz", 0xb5000000, 0xff000000).Src(ClassX, Rt).Target(Imm19).Kind(ImmBranch).Name("Cbnz64"),
 		L("tbz", 0x36000000, 0x7f000000).
-			Src(ClassX, Rt).Imm(BitPos).Kind(ImmBitPos).Target(Imm14).Kind(ImmBranch).Name("Tbz"),
+			Src(ClassX, Rt).Imm(BitPos).Kind(ImmBitPos).Target(Imm14).Kind(ImmBranch).Name("Tbz64"),
 		L("tbnz", 0x37000000, 0x7f000000).
-			Src(ClassX, Rt).Imm(BitPos).Kind(ImmBitPos).Target(Imm14).Kind(ImmBranch).Name("Tbnz"),
+			Src(ClassX, Rt).Imm(BitPos).Kind(ImmBitPos).Target(Imm14).Kind(ImmBranch).Name("Tbnz64"),
+		// The 32-bit forms are the same words with b5 necessarily zero, and
+		// they are separate rows because the bit number's range is what
+		// differs: a W register has no bit 32 to test.
+		L("tbz", 0x36000000, 0xff000000).
+			Src(ClassW, Rt).Imm(BitPos5).Kind(ImmBitPos).Target(Imm14).Kind(ImmBranch).Name("Tbz32"),
+		L("tbnz", 0x37000000, 0xff000000).
+			Src(ClassW, Rt).Imm(BitPos5).Kind(ImmBitPos).Target(Imm14).Kind(ImmBranch).Name("Tbnz32"),
 		L("br", 0xd61f0000, 0xfffffc1f).Src(ClassX, Rn).Name("Br"),
 		L("blr", 0xd63f0000, 0xfffffc1f).Src(ClassX, Rn).Name("Blr"),
 		// RET's operand is optional and defaults to X30. That default is the
@@ -302,6 +341,11 @@ func init() {
 			Dst(ClassW, Rt).Mem(16, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrshImm32"),
 		L("ldrsh", 0x79800000, 0xffc00000).
 			Dst(ClassX, Rt).Mem(16, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrshImm64"),
+		// PRFM's destination is a hint rather than a register: the operand
+		// says what to prefetch and into which cache, and occupies the field
+		// a load's Rt would.
+		L("prfm", 0xf9800000, 0xffc00000).
+			Prf(Rt).Mem(64, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("PrfmImm"),
 		L("ldrsw", 0xb9800000, 0xffc00000).
 			Dst(ClassX, Rt).Mem(32, Rn, Imm12).Kind(ImmScaled).Attr(AttrScaled).Name("LdrswImm"),
 
@@ -378,18 +422,51 @@ func init() {
 		L("cmp", 0xf100001f, 0xff80001f).
 			Src(ClassXsp, Rn).Imm(Imm12).Kind(ImmAddSub12).Opt(ClassShift, Sh, 0).
 			Flags().AliasOf("subs").Pins(Rd, 31).Name("CmpImm64"),
+		L("cmp", 0x7100001f, 0x7f80001f).
+			Src(ClassWsp, Rn).Imm(Imm12).Kind(ImmAddSub12).Opt(ClassShift, Sh, 0).
+			Flags().AliasOf("subs").Pins(Rd, 31).Name("CmpImm32"),
+		L("cmp", 0x6b00001f, 0x7f20001f).
+			Src(ClassW, Rn).Src(ClassW, Rm).Opt(ClassShift, Shift, 0).
+			Flags().AliasOf("subs").Pins(Rd, 31).Name("CmpShifted32"),
 		L("cmn", 0xab00001f, 0xff20001f).
 			Src(ClassX, Rn).Src(ClassX, Rm).Opt(ClassShift, Shift, 0).
 			Flags().AliasOf("adds").Pins(Rd, 31).Name("CmnShifted64"),
+		L("cmn", 0x2b00001f, 0x7f20001f).
+			Src(ClassW, Rn).Src(ClassW, Rm).Opt(ClassShift, Shift, 0).
+			Flags().AliasOf("adds").Pins(Rd, 31).Name("CmnShifted32"),
+		L("cmn", 0xb100001f, 0xff80001f).
+			Src(ClassXsp, Rn).Imm(Imm12).Kind(ImmAddSub12).Opt(ClassShift, Sh, 0).
+			Flags().AliasOf("adds").Pins(Rd, 31).Name("CmnImm64"),
+		L("cmn", 0x3100001f, 0x7f80001f).
+			Src(ClassWsp, Rn).Imm(Imm12).Kind(ImmAddSub12).Opt(ClassShift, Sh, 0).
+			Flags().AliasOf("adds").Pins(Rd, 31).Name("CmnImm32"),
 		L("tst", 0xea00001f, 0xff20001f).
 			Src(ClassX, Rn).Src(ClassX, Rm).Opt(ClassShift, Shift, 0).
 			Flags().AliasOf("ands").Pins(Rd, 31).Name("TstShifted64"),
 		L("tst", 0xf200001f, 0xff80001f).
 			Src(ClassX, Rn).Imm(ImmLogical13).Kind(ImmLogical).
 			Flags().AliasOf("ands").Pins(Rd, 31).Name("TstImm64"),
+		L("tst", 0x6a00001f, 0x7f20001f).
+			Src(ClassW, Rn).Src(ClassW, Rm).Opt(ClassShift, Shift, 0).
+			Flags().AliasOf("ands").Pins(Rd, 31).Name("TstShifted32"),
+		L("tst", 0x7200001f, 0x7f80001f).
+			Src(ClassW, Rn).Imm(ImmLogical13).Kind(ImmLogical).
+			Flags().AliasOf("ands").Pins(Rd, 31).Name("TstImm32"),
 		L("neg", 0xcb0003e0, 0xff2003e0).
 			Dst(ClassX, Rd).Src(ClassX, Rm).Opt(ClassShift, Shift, 0).
 			AliasOf("sub").Pins(Rn, 31).Name("NegShifted64"),
+		L("neg", 0x4b0003e0, 0x7f2003e0).
+			Dst(ClassW, Rd).Src(ClassW, Rm).Opt(ClassShift, Shift, 0).
+			AliasOf("sub").Pins(Rn, 31).Name("NegShifted32"),
+
+		// MVN is ORN with the zero register as its first source, which is the
+		// same relation MOV has to ORR one row further down.
+		L("mvn", 0xaa2003e0, 0xff2003e0).
+			Dst(ClassX, Rd).Src(ClassX, Rm).Opt(ClassShift, Shift, 0).
+			AliasOf("orn").Pins(Rn, 31).Name("MvnShifted64"),
+		L("mvn", 0x2a2003e0, 0x7f2003e0).
+			Dst(ClassW, Rd).Src(ClassW, Rm).Opt(ClassShift, Shift, 0).
+			AliasOf("orn").Pins(Rn, 31).Name("MvnShifted32"),
 
 		// MOV (register) is ORR with the zero register as its first source.
 		// It is preferred only when no shift is applied; ORR with a shift is
@@ -437,6 +514,102 @@ func init() {
 		L("asr", 0x93400000, 0xffc00000).
 			Dst(ClassX, Rd).Src(ClassX, Rn).Imm(Immr).Kind(ImmShiftRight).
 			AliasOf("sbfm").Name("AsrImm64"),
+		L("lsl", 0x53000000, 0x7fc00000).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Imm(Immr).Kind(ImmShiftLeft).
+			AliasOf("ubfm").Name("LslImm32"),
+		L("lsr", 0x53000000, 0x7fc00000).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Imm(Immr).Kind(ImmShiftRight).
+			AliasOf("ubfm").Name("LsrImm32"),
+		L("asr", 0x13000000, 0x7fc00000).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Imm(Immr).Kind(ImmShiftRight).
+			AliasOf("sbfm").Name("AsrImm32"),
+
+		// The register forms of the same four shifts are the variable-shift
+		// instructions under their assembly-language names. Unlike the
+		// immediate forms these pin nothing and compute nothing: LSL Wd, Wn,
+		// Wm and LSLV Wd, Wn, Wm are one word spelled two ways.
+		L("lsl", 0x9ac02000, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).
+			AliasOf("lslv").Name("LslReg64"),
+		L("lsl", 0x1ac02000, 0x7fe0fc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
+			AliasOf("lslv").Name("LslReg32"),
+		L("lsr", 0x9ac02400, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).
+			AliasOf("lsrv").Name("LsrReg64"),
+		L("lsr", 0x1ac02400, 0x7fe0fc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
+			AliasOf("lsrv").Name("LsrReg32"),
+		L("asr", 0x9ac02800, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).
+			AliasOf("asrv").Name("AsrReg64"),
+		L("asr", 0x1ac02800, 0x7fe0fc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
+			AliasOf("asrv").Name("AsrReg32"),
+		L("ror", 0x9ac02c00, 0xffe0fc00).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Src(ClassX, Rm).
+			AliasOf("rorv").Name("RorReg64"),
+		L("ror", 0x1ac02c00, 0x7fe0fc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
+			AliasOf("rorv").Name("RorReg32"),
+
+		// The sign- and zero-extend aliases are SBFM and UBFM with both
+		// immediates fixed, so they carry no immediate operand at all: the
+		// width is in the mnemonic. SXTB Xd, Wn is the odd-looking one and is
+		// the architecture's own spelling — the source is named as a W
+		// register because only its low eight bits are read.
+		L("sxtb", 0x13001c00, 0x7ffffc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).
+			AliasOf("sbfm").Pins(Immr, 0).Pins(Imms, 7).Name("Sxtb32"),
+		L("sxtb", 0x93401c00, 0xfffffc00).
+			Dst(ClassX, Rd).Src(ClassW, Rn).
+			AliasOf("sbfm").Pins(Immr, 0).Pins(Imms, 7).Name("Sxtb64"),
+		L("sxth", 0x13003c00, 0x7ffffc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).
+			AliasOf("sbfm").Pins(Immr, 0).Pins(Imms, 15).Name("Sxth32"),
+		L("sxth", 0x93403c00, 0xfffffc00).
+			Dst(ClassX, Rd).Src(ClassW, Rn).
+			AliasOf("sbfm").Pins(Immr, 0).Pins(Imms, 15).Name("Sxth64"),
+		L("sxtw", 0x93407c00, 0xfffffc00).
+			Dst(ClassX, Rd).Src(ClassW, Rn).
+			AliasOf("sbfm").Pins(Immr, 0).Pins(Imms, 31).Name("Sxtw64"),
+		L("uxtb", 0x53001c00, 0x7ffffc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).
+			AliasOf("ubfm").Pins(Immr, 0).Pins(Imms, 7).Name("Uxtb32"),
+		L("uxth", 0x53003c00, 0x7ffffc00).
+			Dst(ClassW, Rd).Src(ClassW, Rn).
+			AliasOf("ubfm").Pins(Immr, 0).Pins(Imms, 15).Name("Uxth32"),
+
+		// UBFX and SBFX are UBFM and SBFM under the operands a programmer
+		// has: where the field starts and how wide it is, rather than where
+		// it starts and where it ends.
+		L("ubfx", 0x53000000, 0x7fc00000).
+			Dst(ClassW, Rd).Src(ClassW, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsb).Imm(Imms).Kind(ImmBitfieldWidth).
+			AliasOf("ubfm").Name("Ubfx32"),
+		L("ubfx", 0xd3400000, 0xffc00000).
+			Dst(ClassX, Rd).Src(ClassX, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsb).Imm(Imms).Kind(ImmBitfieldWidth).
+			AliasOf("ubfm").Name("Ubfx64"),
+		L("sbfx", 0x13000000, 0x7fc00000).
+			Dst(ClassW, Rd).Src(ClassW, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsb).Imm(Imms).Kind(ImmBitfieldWidth).
+			AliasOf("sbfm").Name("Sbfx32"),
+		L("sbfx", 0x93400000, 0xffc00000).
+			Dst(ClassX, Rd).Src(ClassX, Rn).
+			Imm(Immr).Kind(ImmBitfieldLsb).Imm(Imms).Kind(ImmBitfieldWidth).
+			AliasOf("sbfm").Name("Sbfx64"),
+
+		// ROR (immediate) is EXTR with one source named twice: rotating a
+		// register right is extracting from the pair it forms with itself.
+		// The row copies Rn into Rm rather than the caller passing it, which
+		// is what keeps the assembler and the typed helper on one word.
+		L("ror", 0x13800000, 0x7fa00000).
+			Dst(ClassW, Rd).Src(ClassW, Rn).Imm(Imms).
+			AliasOf("extr").Attr(AttrRnIntoRm).Name("RorImm32"),
+		L("ror", 0x93c00000, 0xffe00000).
+			Dst(ClassX, Rd).Src(ClassX, Rn).Imm(Imms).
+			AliasOf("extr").Attr(AttrRnIntoRm).Name("RorImm64"),
 
 		L("cset", 0x9a9f07e0, 0xffff0fe0).
 			Dst(ClassX, Rd).Cnd(CondHi).

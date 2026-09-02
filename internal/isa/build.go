@@ -81,6 +81,11 @@ func (f *Form) Cnd(fld Field) *Form { return f.slot(ClassCond, RoleModifier, fld
 // Sys adds a system register operand.
 func (f *Form) SysReg(fld Field) *Form { return f.slot(ClassSys, RoleSrc, fld) }
 
+// Prf adds a prefetch operand, which is PRFM's first and the only place one
+// appears. It occupies the register field of a load, because a prefetch is a
+// load whose destination is a hint instead of a register.
+func (f *Form) Prf(fld Field) *Form { return f.slot(ClassPrfOp, RoleSrc, fld) }
+
 // Opt adds an optional operand with a default field value.
 func (f *Form) Opt(c Class, fld Field, def uint64) *Form {
 	f.Slots = append(f.Slots, Slot{

@@ -95,7 +95,9 @@ func (s *Section) AndsImm64(rd, rn reg.X, imm uint64) { s.inst(andsImm64, rd, rn
 
 var (
 	tstShifted64 = form("TstShifted64")
+	tstShifted32 = form("TstShifted32")
 	tstImm64     = form("TstImm64")
+	tstImm32     = form("TstImm32")
 )
 
 // TstShifted64 emits TST Xn, Xm{, shift} — ANDS with the result discarded.
@@ -105,6 +107,14 @@ func (s *Section) TstShifted64(rn, rm reg.X, shift ...ShiftOp) {
 
 // TstImm64 emits TST Xn, #imm — ANDS (immediate) with the result discarded.
 func (s *Section) TstImm64(rn reg.X, imm uint64) { s.inst(tstImm64, rn, imm) }
+
+// TstShifted32 emits TST Wn, Wm{, shift}.
+func (s *Section) TstShifted32(rn, rm reg.W, shift ...ShiftOp) {
+	s.inst(tstShifted32, append([]any{rn, rm}, opt(shift)...)...)
+}
+
+// TstImm32 emits TST Wn, #imm.
+func (s *Section) TstImm32(rn reg.W, imm uint32) { s.inst(tstImm32, rn, uint64(imm)) }
 
 // ---- ORN -------------------------------------------------------------------
 
@@ -122,4 +132,21 @@ func (s *Section) OrnShifted32(rd, rn, rm reg.W, shift ...ShiftOp) {
 // OrnShifted64 emits ORN Xd, Xn, Xm{, shift}.
 func (s *Section) OrnShifted64(rd, rn, rm reg.X, shift ...ShiftOp) {
 	s.inst(ornShifted64, append([]any{rd, rn, rm}, opt(shift)...)...)
+}
+
+// ---- Alias: bitwise complement ---------------------------------------------
+
+var (
+	mvnShifted32 = form("MvnShifted32")
+	mvnShifted64 = form("MvnShifted64")
+)
+
+// MvnShifted32 emits MVN Wd, Wm{, shift} — ORN with WZR as its first source.
+func (s *Section) MvnShifted32(rd, rm reg.W, shift ...ShiftOp) {
+	s.inst(mvnShifted32, append([]any{rd, rm}, opt(shift)...)...)
+}
+
+// MvnShifted64 emits MVN Xd, Xm{, shift}.
+func (s *Section) MvnShifted64(rd, rm reg.X, shift ...ShiftOp) {
+	s.inst(mvnShifted64, append([]any{rd, rm}, opt(shift)...)...)
 }

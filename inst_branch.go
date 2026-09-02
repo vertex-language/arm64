@@ -18,8 +18,10 @@ var (
 	cbz64  = form("Cbz64")
 	cbnz32 = form("Cbnz32")
 	cbnz64 = form("Cbnz64")
-	tbz    = form("Tbz")
-	tbnz   = form("Tbnz")
+	tbz64  = form("Tbz64")
+	tbnz64 = form("Tbnz64")
+	tbz32  = form("Tbz32")
+	tbnz32 = form("Tbnz32")
 	br     = form("Br")
 	blr    = form("Blr")
 	ret    = form("Ret")
@@ -42,17 +44,26 @@ func (s *Section) Cbz64(rt reg.X, target TargetOp) { s.inst(cbz64, rt, target) }
 func (s *Section) Cbnz32(rt reg.W, target TargetOp) { s.inst(cbnz32, rt, target) }
 func (s *Section) Cbnz64(rt reg.X, target TargetOp) { s.inst(cbnz64, rt, target) }
 
-// Tbz emits TBZ Xt, #bit, target: branch if bit bit of Xt is zero, +/-32KiB.
-// bit ranges 0 to 63; the top bit of the field folds into the opcode itself,
-// which is why this form takes an X register regardless of which half the
-// bit falls in.
-func (s *Section) Tbz(rt reg.X, bit uint8, target TargetOp) {
-	s.inst(tbz, rt, uint64(bit), target)
+// Tbz64 emits TBZ Xt, #bit, target: branch if bit bit of Xt is zero,
+// +/-32KiB. bit ranges 0 to 63, and its top bit folds into the opcode itself.
+func (s *Section) Tbz64(rt reg.X, bit uint8, target TargetOp) {
+	s.inst(tbz64, rt, uint64(bit), target)
 }
 
-// Tbnz emits TBNZ Xt, #bit, target: branch if bit bit of Xt is one.
-func (s *Section) Tbnz(rt reg.X, bit uint8, target TargetOp) {
-	s.inst(tbnz, rt, uint64(bit), target)
+// Tbnz64 emits TBNZ Xt, #bit, target: branch if bit bit of Xt is one.
+func (s *Section) Tbnz64(rt reg.X, bit uint8, target TargetOp) {
+	s.inst(tbnz64, rt, uint64(bit), target)
+}
+
+// Tbz32 emits TBZ Wt, #bit, target. bit ranges 0 to 31, which is the whole
+// difference from the 64-bit form: the word is the same one.
+func (s *Section) Tbz32(rt reg.W, bit uint8, target TargetOp) {
+	s.inst(tbz32, rt, uint64(bit), target)
+}
+
+// Tbnz32 emits TBNZ Wt, #bit, target.
+func (s *Section) Tbnz32(rt reg.W, bit uint8, target TargetOp) {
+	s.inst(tbnz32, rt, uint64(bit), target)
 }
 
 // Br emits BR Xn: an unconditional branch to a register, no relocation

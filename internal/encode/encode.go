@@ -60,6 +60,11 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 	// Slots and operands are not in step. A memory operand is one value
 	// filling two slots — a base and an offset — so the two indices are walked
 	// separately rather than zipped.
+	// prevImm is the value of the last immediate operand encoded, which one
+	// rule needs: UBFX's imms is computed from its own operand and the one
+	// before it. Nothing else reads it.
+	prevImm := int64(0)
+
 	oi := 0
 	for si := 0; si < len(f.Slots); si++ {
 		s := f.Slots[si]
@@ -140,10 +145,11 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 			if v.kind != valImm {
 				return 0, nil, &OperandError{f, oi, s.Class, v.raw}
 			}
-			r, err := encodeImm(f, oi, s, v, hasShiftOperand(ops))
+			r, err := encodeImm(f, oi, s, v, hasShiftOperand(ops), prevImm)
 			if err != nil {
 				return 0, nil, err
 			}
+			prevImm = v.imm
 			word = place(word, s.Field, r.value)
 			if r.hasSibling {
 				// ImmShiftLeft and ImmShiftRight write their sibling into
@@ -255,6 +261,12 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 
 	if oi != len(ops) {
 		return 0, nil, &CountError{Form: f, Got: len(ops)}
+	}
+
+	// One source register named twice: ROR (immediate) is EXTR with Rm equal
+	// to Rn, and the row says so rather than the caller.
+	if f.Attrs&isa.AttrRnIntoRm != 0 {
+		word = place(word, isa.Rm, isa.Rn.Get(word))
 	}
 
 	for i := range fixups {
@@ -406,8 +418,9 @@ func encodeMem(f *isa.Form, oi, si int, v val, opts Opts) (func(uint32) uint32, 
 		return apply, fixups, consumed, nil
 	}
 
+	// No previous immediate: a memory offset's rule never reads one.
 	r, err := encodeImm(f, oi, *off, val{kind: valImm, imm: m.Disp.Const,
-		uimm: uint64(m.Disp.Const)}, false)
+		uimm: uint64(m.Disp.Const)}, false, 0)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -432,7 +445,7 @@ func scaleOf(f *isa.Form) uint8 {
 func encodeTarget(f *isa.Form, i int, s isa.Slot, v val, opts Opts) (func(uint32) uint32, []Fixup, error) {
 	switch v.kind {
 	case valImm:
-		r, err := encodeImm(f, i, s, v, false)
+		r, err := encodeImm(f, i, s, v, false, 0)
 		if err != nil {
 			return nil, nil, err
 		}
