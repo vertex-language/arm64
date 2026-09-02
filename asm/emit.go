@@ -50,6 +50,14 @@ func (e *emitter) declareExterns() {
 	}
 	sort.Strings(names) // a stable symbol table beats an incidental one
 	for _, n := range names {
+		if e.m.Defines(n) {
+			// Defined by the module this fragment is being assembled
+			// into, rather than by the fragment. An implicit extern is a
+			// guess about a name nothing defines, and this name is
+			// defined — a block label an asm goto branches to, or another
+			// function in the same object.
+			continue
+		}
 		e.m.Extern(n)
 	}
 }

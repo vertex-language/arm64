@@ -137,6 +137,19 @@ func (m *Module) Sections() []*Section {
 	return out
 }
 
+// Defines reports whether this module defines name.
+//
+// It is the question a caller assembling text into a module that is already
+// partly built has to ask before declaring an implicit extern. GNU as reads
+// a name it never sees defined as one the object imports, and that reading
+// is right for a whole .s file and wrong for a fragment: a name the fragment
+// does not define may still be defined by the module around it — another
+// function, or a block label the emitter has already reached.
+func (m *Module) Defines(name string) bool {
+	i, ok := m.symAt[name]
+	return ok && m.symbols[i].defined
+}
+
 // Extern declares an undefined symbol. Its Section is -1 in the finished
 // object, and a reference naming it survives for the linker to resolve.
 func (m *Module) Extern(name string) {
