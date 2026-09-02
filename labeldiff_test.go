@@ -10,7 +10,7 @@ import (
 // A table of distances, which is what a jump table is here: four bytes per
 // entry, patched at Finalize, and no relocation left behind for a linker to
 // refuse.
-func TestLabelDelta(t *testing.T) {
+func TestLabelDiff(t *testing.T) {
 	m := arm64.NewModule()
 	s := m.Section(arm64.Text)
 	s.Label("start", arm64.Global, arm64.Func)
@@ -22,9 +22,9 @@ func TestLabelDelta(t *testing.T) {
 	s.EndLabel("start")
 
 	s.Label("table", arm64.Local)
-	s.LabelDelta("table", "a")
-	s.LabelDelta("table", "b")
-	s.LabelDelta("table", "start")
+	s.LabelDiff("a", "table")
+	s.LabelDiff("b", "table")
+	s.LabelDiff("start", "table")
 
 	o, err := m.Finalize()
 	if err != nil {
@@ -53,11 +53,11 @@ func TestLabelDelta(t *testing.T) {
 }
 
 // An undefined label is refused by name rather than patched as zero.
-func TestLabelDeltaUndefined(t *testing.T) {
+func TestLabelDiffUndefined(t *testing.T) {
 	m := arm64.NewModule()
 	s := m.Section(arm64.Text)
 	s.Label("here", arm64.Local)
-	s.LabelDelta("here", "nowhere")
+	s.LabelDiff("nowhere", "here")
 	if _, err := m.Finalize(); err == nil {
 		t.Error("Finalize should refuse a delta to an undefined label")
 	}

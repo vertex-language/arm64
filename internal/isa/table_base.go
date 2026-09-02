@@ -440,7 +440,7 @@ func init() {
 
 		L("cset", 0x9a9f07e0, 0xffff0fe0).
 			Dst(ClassX, Rd).Cnd(CondHi).
-			AliasOf("csinc").Pins(Rn, 31).Pins(Rm, 31).Name("Cset64"),
+			AliasOf("csinc").Pins(Rn, 31).Pins(Rm, 31).Attr(AttrInvertCond).Name("Cset64"),
 		L("mul", 0x1b007c00, 0x7fe0fc00).
 			Dst(ClassW, Rd).Src(ClassW, Rn).Src(ClassW, Rm).
 			AliasOf("madd").Pins(Ra, 31).Name("Mul32"),

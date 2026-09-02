@@ -16,7 +16,12 @@ const (
 	ASR Shift = 2
 	ROR Shift = 3
 
-	shiftCount
+	// shiftCount states its value rather than omitting it. In a const block
+	// whose entries carry explicit values, an omitted expression repeats the
+	// previous one rather than continuing a count — so writing it bare made
+	// this 3, which made ROR.Valid report false and every ror shifted-register
+	// instruction unencodable.
+	shiftCount Shift = 4
 )
 
 func (s Shift) Valid() bool { return s < shiftCount }

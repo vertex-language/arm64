@@ -34,6 +34,20 @@ const (
 	// AttrNoZR marks a form in which register 31 in a slot means something
 	// other than the zero register even though the slot's class says X or W.
 	AttrNoZR
+
+	// AttrInvertCond marks a form whose condition field holds the inverse of
+	// the condition written in source.
+	//
+	// CSET is the reason. It is CSINC with both sources pinned to the zero
+	// register, and CSINC increments when its condition is *false* — so
+	// "cset x0, eq" has to encode NE, or it would set x0 when the comparison
+	// was not equal. That is a fact about the encoding, so it belongs on the
+	// row, where both doors onto the encoder pass through it. It lived in the
+	// typed helper until an assembler reached the same row without going
+	// through that helper and encoded the condition uninverted — the two
+	// doors producing different instructions for one mnemonic, which is the
+	// one thing sharing an encoder is supposed to make impossible.
+	AttrInvertCond
 )
 
 // Form is one declared encoding of one mnemonic.

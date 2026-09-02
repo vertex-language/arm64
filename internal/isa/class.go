@@ -59,6 +59,16 @@ const (
 	ClassMem64
 	ClassMem128
 
+	// ClassMemAny is an address whose access width the caller did not state.
+	//
+	// It is an argument class and never a slot class: no form is indifferent
+	// to how wide its access is, and one that declared itself so would be
+	// wrong. It exists because assembly source does not state a width —
+	// `[sp, #-16]` is the same six characters under stp and under str — so
+	// the width has to come from the form, and an argument saying nothing
+	// about it has to be able to match one.
+	ClassMemAny
+
 	// Everything that is not a register or an address.
 	ClassImm     // an immediate; the field's own predicate decides the range
 	ClassLabel   // a branch or address target
@@ -102,6 +112,7 @@ var classInfo = [classCount]struct {
 	ClassMem32:  {"[addr]", reg.FileNone, 32, true},
 	ClassMem64:  {"[addr]", reg.FileNone, 64, true},
 	ClassMem128: {"[addr]", reg.FileNone, 128, true},
+	ClassMemAny: {"[addr]", reg.FileNone, 0, true},
 
 	ClassImm:     {"#imm", reg.FileNone, 0, false},
 	ClassLabel:   {"label", reg.FileNone, 0, false},
@@ -172,5 +183,5 @@ func memClass(bits uint16) Class {
 	case 128:
 		return ClassMem128
 	}
-	return ClassNone
+	return ClassMemAny
 }

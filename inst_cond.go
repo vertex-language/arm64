@@ -37,16 +37,9 @@ var cset64 = form("Cset64")
 
 // Cset64 emits CSET Xd, cond: Xd = cond ? 1 : 0.
 //
-// CSINC increments when its own condition is false — Xd = cond' ? Xn : Xm+1
-// — so the field CSET pins has to be the inverse of the condition the caller
-// wrote, or "cset x0, eq" would set x0 to 1 when the comparison was NOT
-// equal. AL and NV invert to nothing (both always execute), and Cond.Invert
-// reports that; this passes either through unchanged rather than refusing
-// them, matching the architecture's own reading of "cset x0, al".
-func (s *Section) Cset64(rd reg.X, c Cond) {
-	inv, ok := c.Invert()
-	if !ok {
-		inv = c
-	}
-	s.inst(cset64, rd, inv)
-}
+// The condition is inverted on the way into the field, because CSINC
+// increments when its own condition is false. That inversion is the row's
+// (AttrInvertCond), not this function's: an assembler reaching the same row
+// through Emit has to get the same word, and it did not while the rule lived
+// here.
+func (s *Section) Cset64(rd reg.X, c Cond) { s.inst(cset64, rd, c) }

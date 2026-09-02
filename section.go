@@ -30,7 +30,7 @@ type Section struct {
 	// placement order, until resolve folds or promotes each one at Finalize.
 	pending []pending
 
-	// deltas holds the label differences LabelDelta left behind. Kept
+	// deltas holds the label differences LabelDiff left behind. Kept
 	// apart from pending because a difference names two labels and a
 	// fixup names one, and because it is not a relocation candidate: a
 	// distance between two offsets in one section is a constant whatever
@@ -263,8 +263,10 @@ func (s *Section) LabelRef(name string) {
 	s.buf = append(s.buf, make([]byte, 8)...)
 }
 
-// LabelDelta places a four-byte hole patched at Finalize with the signed
-// distance from `from` to `to`, both labels in this section.
+// LabelDiff places a four-byte hole patched at Finalize with the signed
+// distance to - from, both labels in this section. The arguments are in the
+// order the source expression writes them, which is also the order amd64's
+// LabelDiff takes: an assembler reading `.long a - b` passes a then b.
 //
 // No relocation, and none possible: the difference between two offsets in one
 // section is the same number wherever the section loads, which is what makes
@@ -272,7 +274,7 @@ func (s *Section) LabelRef(name string) {
 // jump table is the reason it exists — Mach-O will not accept an absolute
 // pointer into text from a read-only section in a position-independent image,
 // and a table of distances needs no such pointer.
-func (s *Section) LabelDelta(from, to string) {
+func (s *Section) LabelDiff(to, from string) {
 	if !s.ok() {
 		return
 	}
@@ -370,10 +372,28 @@ func (s *Section) foldLabel(p pending, name string) error {
 // promote turns a fixup naming a symbol into a Reference, once refKindFor has
 // said which relocation the field wants.
 func (s *Section) promote(p pending, t operand.SymRef) error {
-	if _, ok := s.m.symAt[t.Name]; !ok {
+	i, ok := s.m.symAt[t.Name]
+	if !ok {
 		return s.errorAt(obj.ErrUndefined,
 			p.mnem+": reference to "+t.Name,
 			"define the symbol in this module or declare it with Extern")
+	}
+
+	// A direct reference to a local label in this very section is a distance
+	// this section already knows, and a relocation for it would ask a linker
+	// to compute a number that cannot change. Fold it.
+	//
+	// Local is the whole of the condition, and it is not a nicety: a branch to
+	// a *global* in this section must stay a relocation, because another
+	// object may interpose a different definition and the linker has to be
+	// left able to redirect it. GNU as draws the line in exactly this place.
+	if p.fx.Role == operand.RoleDirect && s.m.symbols[i].defined &&
+		s.m.symbols[i].binding == Local && s.m.symbols[i].sec == s.index {
+		if _, here := s.labels[t.Name]; here {
+			q := p
+			q.fx.Addend += t.Addend
+			return s.foldLabel(q, t.Name)
+		}
 	}
 	kind, err := refKindFor(p.mnem, p.fx)
 	if err != nil {

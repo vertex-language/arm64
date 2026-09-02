@@ -212,7 +212,16 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 			if !v.cond.Valid() {
 				return 0, nil, &OperandError{f, oi, s.Class, v.raw}
 			}
-			word = place(word, s.Field, uint64(v.cond))
+			c := v.cond
+			if f.Attrs&isa.AttrInvertCond != 0 {
+				// AL and NV invert to nothing — both always execute — and
+				// Invert says so. They pass through unchanged, which is the
+				// architecture's own reading of "cset x0, al".
+				if inv, ok := c.Invert(); ok {
+					c = inv
+				}
+			}
+			word = place(word, s.Field, uint64(c))
 			oi++
 
 		case s.Class == isa.ClassBarrier:

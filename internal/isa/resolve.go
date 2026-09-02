@@ -79,10 +79,7 @@ func Resolve(mnem string, args []Arg, set feature.Set) (*Form, error) {
 	var near []*Form
 
 	for _, f := range forms {
-		if !arityFits(f, len(args)) {
-			continue
-		}
-		if !slotsMatch(f, args) {
+		if !accepts(f, args) {
 			near = append(near, f)
 			continue
 		}
@@ -105,17 +102,68 @@ func Resolve(mnem string, args []Arg, set feature.Set) (*Form, error) {
 	return nil, &FormError{Mnem: mnem, Args: args, Near: near}
 }
 
-func arityFits(f *Form, n int) bool {
-	return n >= f.Required() && n <= f.Arity()
-}
-
-func slotsMatch(f *Form, args []Arg) bool {
-	for i, a := range args {
-		if !f.Slots[i].Class.Match(a) {
+// accepts reports whether a form takes these arguments.
+//
+// Slots and arguments are not in step, which is the whole reason this is not a
+// zip. A memory operand is one argument filling two slots — a base and the
+// displacement beside it — because an address is one thing to whoever wrote it
+// and two fields to the encoder. encodeForm walks the two indices separately
+// for the same reason; this function has to walk them the same way, or a form
+// would resolve that then failed to encode.
+func accepts(f *Form, args []Arg) bool {
+	si := 0
+	for _, a := range args {
+		if si >= len(f.Slots) {
+			return false
+		}
+		s := f.Slots[si]
+		if !s.Class.Match(a) {
+			return false
+		}
+		si++
+		if s.Class.Mem() {
+			if !addrFits(f, s, a) {
+				return false
+			}
+			if si < len(f.Slots) && f.Slots[si].Role == RoleOffset {
+				si++
+			}
+		}
+	}
+	// Anything left has to be a slot the caller was allowed to omit.
+	for ; si < len(f.Slots); si++ {
+		if !f.Slots[si].Optional {
 			return false
 		}
 	}
 	return true
+}
+
+// addrFits reports whether a form's encoding expresses the addressing mode an
+// argument asks for.
+//
+// The writeback modes are separate encodings, so they must agree in both
+// directions: a pre-indexed address needs a form that writes back, and an
+// ordinary one must not resolve to a form that does. Only the first direction
+// is checked at encode time, because the typed surface names the form and its
+// caller cannot get them crossed. Text can — `stp x0, x1, [sp, #16]` and
+// `stp x0, x1, [sp, #16]!` differ by one character — so both directions are
+// checked here.
+func addrFits(f *Form, base Slot, a Arg) bool {
+	writeback := f.Attrs&(AttrPreIndex|AttrPostIndex) != 0
+	switch a.Addr {
+	case AddrPreIndex:
+		return f.Attrs&AttrPreIndex != 0
+	case AddrPostIndex:
+		return f.Attrs&AttrPostIndex != 0
+	case AddrRegOffset:
+		// The table declares no Rm or option field for one anywhere yet,
+		// and encodeMem refuses it by name.
+		return false
+	case AddrBase, AddrOffset, AddrNone:
+		return !writeback
+	}
+	return false
 }
 
 // ResolveWord finds the form a word decodes to, by linear scan over the table,

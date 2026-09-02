@@ -20,7 +20,9 @@ const (
 	SXTW Extend = 6
 	SXTX Extend = 7
 
-	extendCount
+	// extendCount states its value; see the note on shiftCount. Omitted, it
+	// repeated SXTX's 7 and made SXTX.Valid report false.
+	extendCount Extend = 8
 
 	// ExtNone is "not stated". It is not zero, because zero is UXTB.
 	ExtNone Extend = 0xff
