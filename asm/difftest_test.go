@@ -69,6 +69,20 @@ var lines = []string{
 	"mov x0, x1",
 	"mov w0, w1",
 	"mov x0, #1",
+	// `mov` with an immediate is three encodings wearing one mnemonic, and
+	// which one it is depends on the value: MOVZ for a halfword, MOVN for
+	// the inverse of one, ORR against the zero register for a bitmask.
+	"mov x0, #0x10000",
+	"mov x0, #-1",
+	"mov w0, #-1",
+	"mov x0, #-3",
+	"mov w0, #-3",
+	"mov x0, #-65536",
+	"mov x0, #0xffffffffffff0000",
+	"mov x0, #0xff00ff00ff00ff00",
+	"mov w0, #0xff00ff00",
+	"mov x0, #0xfffffffffffffffe",
+	"mov w1, #0x7ffffffe",
 	"movz x0, #0x1234",
 	"movz x0, #0x1234, lsl #16",
 	"movk w1, #0xbeef",

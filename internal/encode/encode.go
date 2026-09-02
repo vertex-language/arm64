@@ -67,6 +67,14 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 	// before it. Nothing else reads it.
 	prevImm := int64(0)
 
+	// filled is the field an immediate's sibling wrote into, if any. An
+	// optional shift slot that goes unwritten normally places its default,
+	// and the default would land on top of the sibling — `movz x0, #0x10000`
+	// names a halfword the immediate encoder put in Hw, and no shift was
+	// written, so the two slots are competing for one field. The immediate
+	// wins: it is the one that knows the value.
+	var filled *isa.Field
+
 	oi := 0
 	for si := 0; si < len(f.Slots); si++ {
 		s := f.Slots[si]
@@ -75,7 +83,9 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 			if !s.Optional {
 				return 0, nil, &CountError{Form: f, Got: len(ops)}
 			}
-			word = place(word, s.Field, s.Default)
+			if filled == nil || *filled != s.Field {
+				word = place(word, s.Field, s.Default)
+			}
 			continue
 		}
 		v := ops[oi]
@@ -162,6 +172,19 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 					word = place(word, isa.Imms, r.sibling)
 				} else if fld, ok := siblingField(f, r.siblingClass); ok {
 					word = place(word, fld, r.sibling)
+					sib := fld
+					filled = &sib
+				} else if r.sibling != 0 {
+					// No field for it, and it is not zero: encoding this
+					// form would drop part of the value and produce a
+					// different instruction with no diagnostic. `mov x0,
+					// #0x10000` is the case — the MOV alias row carries the
+					// halfword and not the shift, and the row that can say
+					// which halfword is MOVZ's.
+					return 0, nil, &RangeError{f, oi, v.imm,
+						"a value this form encodes in one field: it names a halfword and " +
+							"has nowhere to put the shift, so a value in a higher halfword " +
+							"needs the instruction the alias stands for"}
 				}
 			}
 			oi++
@@ -180,7 +203,9 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 				// An unwritten optional shift; the slot keeps its default and
 				// this operand belongs to a later slot.
 				if s.Optional {
-					word = place(word, s.Field, s.Default)
+					if filled == nil || *filled != s.Field {
+						word = place(word, s.Field, s.Default)
+					}
 					continue
 				}
 				return 0, nil, &OperandError{f, oi, s.Class, v.raw}

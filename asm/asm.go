@@ -40,6 +40,7 @@ func (t *target) Inst(p *gas.Parser, mnem string) error {
 	}
 
 	ops = pstateField(name, ops)
+	name, ops = movPseudo(name, ops)
 
 	// The module records failures rather than returning them, so a
 	// diagnostic is a difference: an error that was not there before this

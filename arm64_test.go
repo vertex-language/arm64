@@ -89,3 +89,47 @@ func TestSmokeUndefinedReference(t *testing.T) {
 		t.Errorf("error = %v, want ErrUndefined", err)
 	}
 }
+
+// A value in a halfword above the first, through the typed API.
+//
+// The immediate encoder computes the halfword's index and writes it into Hw
+// as a sibling of the value; the slot it lands in is an *optional* shift
+// slot, and an optional slot with no operand left for it places its default.
+// Both were true at once here, so the default landed on top of the index and
+// `movz x0, #0x10000` assembled as `movz x0, #1` — a different instruction,
+// silently, through every door this package has.
+func TestMovzShiftedHalfword(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		emit func(*Section)
+		want uint32
+	}{
+		{"movz x0, #0x10000", func(s *Section) { s.MovzImm64(X0, 0x10000) }, 0xd2a00020},
+		{"movz x0, #0x1000000000000", func(s *Section) { s.MovzImm64(X0, 0x1000000000000) }, 0xd2e00020},
+		{"movz w0, #0x30000", func(s *Section) { s.MovzImm32(W0, 0x30000) }, 0x52a00060},
+		{"movz x0, #1 keeps hw zero", func(s *Section) { s.MovzImm64(X0, 1) }, 0xd2800020},
+		{"movk x0, #0x20000", func(s *Section) { s.MovkImm64(X0, 0x20000) }, 0xf2a00040},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := NewModule()
+			text := m.Section(Text)
+			text.Label("f", Global, Func)
+			tc.emit(text)
+			text.EndLabel("f")
+
+			o, err := m.Finalize()
+			if err != nil {
+				t.Fatalf("Finalize: %v", err)
+			}
+			var b []byte
+			for _, s := range o.Sections() {
+				if len(s.Bytes()) >= 4 {
+					b = s.Bytes()
+				}
+			}
+			if got := binary.LittleEndian.Uint32(b[:4]); got != tc.want {
+				t.Errorf("= %#08x, want %#08x", got, tc.want)
+			}
+		})
+	}
+}
