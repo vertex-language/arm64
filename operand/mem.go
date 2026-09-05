@@ -206,7 +206,7 @@ func (m Mem) Validate() error {
 	case AddrOffset:
 		if m.Disp.Sym {
 			switch m.Disp.Ref.Role {
-			case RolePageOff, RoleGotPageOff:
+			case RolePageOff, RoleGotPageOff, RoleTlvPageOff:
 			default:
 				return errors.New("only the page-offset half of an address can be a memory displacement")
 			}

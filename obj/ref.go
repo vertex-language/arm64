@@ -7,7 +7,7 @@ package obj
 // document, disassembler and linker error message already uses, and a second
 // naming scheme for the same sixteen ideas would only cost a reader the
 // translation. Mach-O and COFF get their own kind where their model has no ELF
-// counterpart: RefTLV for Mach-O's descriptor-call TLS, RefSecRel32 and
+// counterpart: the RefTlv pair for Mach-O's descriptor-call TLS, RefSecRel32 and
 // RefSecIdx for COFF's section-relative debug forms.
 //
 // The set is the union of what the three containers can express, not the
@@ -110,10 +110,24 @@ const (
 	RefTlsLeAddTprelHi12
 	RefTlsLeAddTprelLo12
 
-	// RefTLV is Mach-O's. A thread-local there is reached through a
-	// descriptor and a call rather than a relocation model, which is why it
-	// is one kind and the ELF models above are seven.
-	RefTLV
+	// Mach-O's, and a pair rather than one kind.
+	//
+	// A thread-local there is reached through a descriptor and a call
+	// rather than through a relocation model, so where ELF has seven kinds
+	// above this has two — but it does need two. The address of the
+	// descriptor is built the way every other PC-relative address on this
+	// architecture is built, an ADRP and then the low twelve bits, and the
+	// container names the halves separately: ARM64_RELOC_TLVP_LOAD_PAGE21
+	// and ARM64_RELOC_TLVP_LOAD_PAGEOFF12. One kind could not say which
+	// instruction it was on.
+	//
+	// The LOAD in those names is the unrelaxed form, where the low half is
+	// an LDR through __thread_ptrs. A linker that finds the descriptor in
+	// the image it is building rewrites the LDR as an ADD and addresses it
+	// directly; the relocation is the same either way, and which one it
+	// became is the linker's business rather than this layer's.
+	RefAdrTlvPage21
+	RefLdTlvLo12
 
 	// Size and COFF's section-relative forms, carried for parity with the
 	// other architectures in this tree; a lowering that never emits debug
@@ -152,7 +166,8 @@ var refNames = [numRefKinds]string{
 	RefTlsLeAddTprelHi12:      "tlsle-add-tprel-hi12",
 	RefTlsLeAddTprelLo12:      "tlsle-add-tprel-lo12",
 
-	RefTLV: "tlv",
+	RefAdrTlvPage21: "tlv-adr-page21",
+	RefLdTlvLo12:    "tlv-ld-lo12",
 
 	RefSize32: "size32", RefSize64: "size64",
 	RefSecRel32: "secrel32", RefSecIdx: "secidx",
@@ -218,7 +233,7 @@ func (k RefKind) TLS() bool {
 	case RefTlsGdAdrPage21, RefTlsGdAddLo12,
 		RefTlsIeAdrGottprelPage21, RefTlsIeLd64GottprelLo12,
 		RefTlsLeAddTprelHi12, RefTlsLeAddTprelLo12,
-		RefTLV:
+		RefAdrTlvPage21, RefLdTlvLo12:
 		return true
 	}
 	return false

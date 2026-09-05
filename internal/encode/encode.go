@@ -137,7 +137,7 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 			// and the page half has its own field on ADRP.
 			if v.kind == valRef {
 				switch v.ref.Role {
-				case operand.RolePageOff, operand.RoleGotPageOff:
+				case operand.RolePageOff, operand.RoleGotPageOff, operand.RoleTlvPageOff:
 				default:
 					return 0, nil, &OperandError{f, oi, s.Class, v.raw}
 				}
@@ -567,9 +567,9 @@ func encodeTarget(f *isa.Form, i int, s isa.Slot, v val, opts Opts) (func(uint32
 
 func targetScale(role operand.AddrRole, f *isa.Form) uint8 {
 	switch role {
-	case operand.RolePage, operand.RoleGotPage:
+	case operand.RolePage, operand.RoleGotPage, operand.RoleTlvPage:
 		return 12 // 4KiB pages
-	case operand.RolePageOff, operand.RoleGotPageOff:
+	case operand.RolePageOff, operand.RoleGotPageOff, operand.RoleTlvPageOff:
 		return scaleOf(f)
 	}
 	if f.Attrs&isa.AttrBranch != 0 {

@@ -87,6 +87,12 @@ const (
 	RolePageOff    // :lo12:    / @PAGEOFF
 	RoleGotPage    // :got:     / @GOTPAGE
 	RoleGotPageOff // :got_lo12:/ @GOTPAGEOFF
+
+	// Mach-O's thread-local pair. The same two instructions as the GOT
+	// pair against a thread-local's descriptor instead of a GOT entry,
+	// and spelled @TLVPPAGE / @TLVPPAGEOFF in Apple's assembler.
+	RoleTlvPage    // @TLVPPAGE
+	RoleTlvPageOff // @TLVPPAGEOFF
 )
 
 func (r AddrRole) String() string {
@@ -97,6 +103,10 @@ func (r AddrRole) String() string {
 		return "pageoff"
 	case RoleGotPage:
 		return "gotpage"
+	case RoleTlvPage:
+		return "tlvpage"
+	case RoleTlvPageOff:
+		return "tlvpageoff"
 	case RoleGotPageOff:
 		return "gotpageoff"
 	}
@@ -120,6 +130,8 @@ func Page(t Target) AddrRef       { return AddrRef{T: t, Role: RolePage} }
 func PageOff(t Target) AddrRef    { return AddrRef{T: t, Role: RolePageOff} }
 func GotPage(t Target) AddrRef    { return AddrRef{T: t, Role: RoleGotPage} }
 func GotPageOff(t Target) AddrRef { return AddrRef{T: t, Role: RoleGotPageOff} }
+func TlvPage(t Target) AddrRef    { return AddrRef{T: t, Role: RoleTlvPage} }
+func TlvPageOff(t Target) AddrRef { return AddrRef{T: t, Role: RoleTlvPageOff} }
 
 // Direct wraps a bare target, so a caller lowering operands has one type to
 // handle rather than two.
@@ -153,6 +165,10 @@ func (a AddrRef) String() string {
 		return ":lo12:" + a.T.String()
 	case RoleGotPage:
 		return ":got:" + a.T.String()
+	case RoleTlvPage:
+		return "tlvpage"
+	case RoleTlvPageOff:
+		return "tlvpageoff"
 	case RoleGotPageOff:
 		return ":got_lo12:" + a.T.String()
 	}

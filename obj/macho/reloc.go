@@ -25,11 +25,10 @@ import (
 // and this writer folds it the same way.
 //
 // RefPrel64/32/16 have no row: Mach-O's arm64 backend has no plain
-// PC-relative data relocation, only the page/branch families below. RefTLV
-// is the one thread-local kind Mach-O answers for, through the same
-// GOT-style ADRP/LDR pair TLVP_LOAD names rather than the ELF descriptor
-// model's seven kinds — this writer does not reach it either, because
-// nothing above the reference layer builds the TLV descriptor sequence yet.
+// PC-relative data relocation, only the page/branch families below. The
+// thread-local kinds Mach-O answers for are the RefTlv pair, through the
+// same GOT-style ADRP/LDR shape TLVP_LOAD names rather than the ELF
+// descriptor model's seven.
 type relocForm struct {
 	typ       machocore.ARM64Reloc
 	pcrel     bool
@@ -54,6 +53,11 @@ var relocTypes = map[obj.RefKind]relocForm{
 
 	obj.RefAdrGotPage21: {machocore.ARM64_RELOC_GOT_LOAD_PAGE21, true, true},
 	obj.RefLd64GotLo12:  {machocore.ARM64_RELOC_GOT_LOAD_PAGEOFF12, false, true},
+
+	// The thread-local pair, which is the GOT pair's shape against a
+	// descriptor instead of a GOT entry.
+	obj.RefAdrTlvPage21: {machocore.ARM64_RELOC_TLVP_LOAD_PAGE21, true, true},
+	obj.RefLdTlvLo12:    {machocore.ARM64_RELOC_TLVP_LOAD_PAGEOFF12, false, true},
 }
 
 // writeRelocs translates one section's holes into relocation entries.

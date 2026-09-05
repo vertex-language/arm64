@@ -27,6 +27,28 @@ func kindPlacement(k obj.SectionKind) (SegSect, machocore.SecType, machocore.Sec
 	return SegSect{machocore.SEG_DATA, machocore.SECT_DATA}, machocore.S_REGULAR, 0
 }
 
+// tlsPlacement is where the thread-local sections go, and what type
+// each carries.
+//
+// The type is the point. __thread_data holds the templates every
+// thread's copy is made from, __thread_bss the ones that start zeroed,
+// and __thread_vars the three-word descriptors dyld fills in — and a
+// linker and a loader tell them apart by S_THREAD_LOCAL_*, not by name.
+// Written as S_REGULAR they would be ordinary data, copied once and
+// shared by every thread.
+//
+// The names are spelled the ELF way, as every other section here is:
+// .tdata and .tbss are ELF's own, and .tlvdesc has no ELF counterpart
+// because ELF has no descriptors.
+var tlsPlacement = map[string]struct {
+	ss  SegSect
+	typ machocore.SecType
+}{
+	".tdata":   {SegSect{machocore.SEG_DATA, "__thread_data"}, machocore.S_THREAD_LOCAL_REGULAR},
+	".tbss":    {SegSect{machocore.SEG_DATA, "__thread_bss"}, machocore.S_THREAD_LOCAL_ZEROFILL},
+	".tlvdesc": {SegSect{machocore.SEG_DATA, "__thread_vars"}, machocore.S_THREAD_LOCAL_VARIABLES},
+}
+
 // dwarfNames is the ELF-to-Mach-O spelling of the DWARF sections.
 var dwarfNames = map[string]string{
 	".debug_abbrev":      "__debug_abbrev",
@@ -66,6 +88,10 @@ func placement(s *obj.Section, opt Options) (SegSect, machocore.SecType, machoco
 	if s.Name() == s.Kind().String() {
 		ss, typ, attrs := kindPlacement(s.Kind())
 		return ss, typ, attrs, nil
+	}
+
+	if tls, ok := tlsPlacement[s.Name()]; ok {
+		return tls.ss, tls.typ, 0, nil
 	}
 
 	if name, ok := dwarfNames[s.Name()]; ok {

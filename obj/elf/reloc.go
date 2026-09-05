@@ -16,7 +16,7 @@ import (
 // half of an address, direct or through the GOT, which TLS model — so
 // nothing here chooses between them; it spells what was chosen.
 //
-// RefTLV has no row: it is Mach-O's descriptor-call model and ELF has no
+// The RefTlv pair has no row: it is Mach-O's descriptor-call model and ELF has no
 // relocation for it. RefSecRel32 and RefSecIdx are COFF's. RefSize32 and
 // RefSize64 have no row either — the AArch64 ELF psABI does not declare a
 // symbol-size relocation the way x86-64's R_X86_64_SIZE32/64 do, so a

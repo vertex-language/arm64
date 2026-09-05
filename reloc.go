@@ -54,6 +54,10 @@ func refKindFor(mnem string, fx encode.Fixup) (obj.RefKind, error) {
 		return obj.RefAdrGotPage21, nil
 	case operand.RoleGotPageOff:
 		return obj.RefLd64GotLo12, nil
+	case operand.RoleTlvPage:
+		return obj.RefAdrTlvPage21, nil
+	case operand.RoleTlvPageOff:
+		return obj.RefLdTlvLo12, nil
 	case operand.RolePageOff:
 		switch fx.Access {
 		case operand.Width8:

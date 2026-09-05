@@ -75,7 +75,8 @@ const (
 	RefTlsLeAddTprelHi12      = obj.RefTlsLeAddTprelHi12
 	RefTlsLeAddTprelLo12      = obj.RefTlsLeAddTprelLo12
 
-	RefTLV = obj.RefTLV
+	RefAdrTlvPage21 = obj.RefAdrTlvPage21
+	RefLdTlvLo12    = obj.RefLdTlvLo12
 
 	RefSize32   = obj.RefSize32
 	RefSize64   = obj.RefSize64
@@ -238,6 +239,8 @@ var (
 	PageOff    = operand.PageOff
 	GotPage    = operand.GotPage
 	GotPageOff = operand.GotPageOff
+	TlvPage    = operand.TlvPage
+	TlvPageOff = operand.TlvPageOff
 	Direct     = operand.Direct
 )
 
