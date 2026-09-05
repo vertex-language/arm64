@@ -171,7 +171,7 @@ Section kinds and symbol attributes are `obj`'s constants, re-exported at the ro
 ```go
 for _, s := range o.Sections() {
     s.Index()     // its position, which is what a symbol's Section names
-    s.Kind()      // arm64.Text, arm64.Data, arm64.ROData, arm64.BSS
+    s.Kind()      // arm64.Text, arm64.Data, arm64.ROData, arm64.BSS, arm64.RelROData
     s.Name()      // ".text", or whatever SectionNamed was given
     s.Align()     // the largest alignment the builder asked for, at least 1
     s.Size()      // length in bytes
@@ -475,6 +475,8 @@ Each is tested against a tool this tree did not write, not against its own idea 
 - **`arm64/obj/pe`** has the simplest relocation model of the three: ARM64 COFF relocations never pair (`RelocARM64.IsPair` and `TakesPair` both always report false), so every `RefKind` is one relocation record and nothing more. The `PAGEOFFSET_12L` type folds all five of `RefLdSt8AbsLo12` through `RefLdSt128AbsLo12` into one number — the psABI's own note is that the access-width scaling is a linker's job, decoded from the instruction, not a table's — which is simpler than ELF's and Mach-O's per-width families. `pe_test.go` checks the same three things the ELF test does, under `objdump`. There is no link-and-run counterpart: this development host has no ARM64 Windows linker.
 
 `ROData` becomes `.rdata` for COFF, matching link.exe's default merge rules, the same rename amd64's PE writer makes; every other section keeps its ELF-spelled name across all three containers except Mach-O, which places by segment and section (`(__TEXT,__text)`, `(__TEXT,__const)`, and so on) rather than by name at all.
+
+`RelROData` is read-only data a loader has to write before it means anything — a table of addresses of other symbols, such as a vtable. It cannot be `ROData`: `.rodata` is mapped read-only from the file and `(__TEXT,__const)` sits inside the text segment, so the relocation either faults or is never applied. It should not be `Data` either, since once relocated the bytes are constant and a writable table of function pointers is one an attacker can edit. Each container spells it differently — `.data.rel.ro` on ELF, allocated and writable so the loader can relocate before it `mprotect`s; `(__DATA,__const)` on Mach-O, which `ld` moves into `__DATA_CONST`; `.rdata` on COFF, which needs nothing special because base relocations are applied before page protections are set — which is why it is a kind and not a name.
 
 A `RefKind` a container has no relocation for is `ErrRefKind` from that writer, naming the kind, the symbol and the section offset — never a construction-time refusal, because the same object is legal for a different container. The GOT kinds and every TLS model are `ErrRefKind` from `obj/pe` (no GOT, no ELF-shaped TLS on this machine); every ELF TLS model except the plain descriptor case is `ErrRefKind` from `obj/macho` (`RefTLV` is the one thread-local kind that container answers for, and nothing above the reference layer builds the descriptor sequence yet regardless).
 
