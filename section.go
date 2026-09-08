@@ -289,6 +289,40 @@ func (s *Section) LabelDiff(to, from string) {
 	s.buf = append(s.buf, make([]byte, 4)...)
 }
 
+// SymDelta places a four-byte hole holding to - from, where the two are
+// symbols this section cannot fold: one of them is in another section, or in
+// another object entirely.
+//
+// LabelDiff above is the foldable case and needs no relocation at all. This
+// is the other one, and it is what every descriptor Swift's runtime reads is
+// built out of: a relative pointer is `to - from` with from at the field's
+// own address. There is no symbol at an arbitrary offset inside a data
+// object, so the caller names the object and supplies the field's offset
+// within it as a negative addend -- which is what swiftc's own conformance
+// descriptors do, entry by entry.
+//
+// The addend is folded into the field, which is where Mach-O's SUBTRACTOR
+// pair reads one from.
+func (s *Section) SymDelta(to, from string, addend int64) {
+	if !s.ok() {
+		return
+	}
+	if !fitsSigned(addend, 32) {
+		s.m.fail(s.errorAt(obj.ErrRange, "symbol delta: addend "+decimal(addend),
+			"does not fit 32 signed bits"))
+		return
+	}
+	s.refs = append(s.refs, obj.Reference{
+		Offset:     len(s.buf),
+		Size:       4,
+		Sym:        to,
+		Subtrahend: from,
+		Kind:       obj.RefDelta32,
+		Addend:     addend,
+	})
+	s.buf = append(s.buf, make([]byte, 4)...)
+}
+
 // ---- Finalize machinery -----------------------------------------------------
 
 // resolve runs at Finalize: same-section direct references fold into the

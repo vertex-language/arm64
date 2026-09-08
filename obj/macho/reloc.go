@@ -63,6 +63,17 @@ var relocTypes = map[obj.RefKind]relocForm{
 // writeRelocs translates one section's holes into relocation entries.
 func writeRelocs(wr *machoobj.Writer, b *machoobj.SectionBuilder, s *obj.Section, content []byte, syms map[string]machoobj.SymRef) error {
 	for _, r := range s.Refs() {
+		// A symbol difference is two entries at one address: the
+		// subtrahend first, then the target. Mach-O has no single
+		// relocation for `a - b`, and the field carries the addend --
+		// which for a relative pointer is the negative of the field's
+		// offset inside the symbol it is subtracting.
+		if r.Kind == obj.RefDelta32 {
+			if err := writeDelta(wr, b, s, r, content, syms); err != nil {
+				return err
+			}
+			continue
+		}
 		form, ok := relocTypes[r.Kind]
 		if !ok {
 			return refKindError(s, r, "Mach-O has no relocation for this kind")
@@ -104,6 +115,43 @@ func writeRelocs(wr *machoobj.Writer, b *machoobj.SectionBuilder, s *obj.Section
 			Length:  length,
 		})
 	}
+	return wr.Err()
+}
+
+// writeDelta emits the SUBTRACTOR/UNSIGNED pair one symbol difference
+// needs, in that order: the linker reads the first as what to take away
+// and the second as what to take it away from.
+func writeDelta(wr *machoobj.Writer, b *machoobj.SectionBuilder, s *obj.Section,
+	r obj.Reference, content []byte, syms map[string]machoobj.SymRef) error {
+	if r.Subtrahend == "" {
+		return refKindError(s, r, "a symbol difference with nothing to subtract")
+	}
+	minus, ok := syms[r.Subtrahend]
+	if !ok {
+		return fmt.Errorf("macho: %s+%#x: reference to %q, which is not in the symbol table",
+			s.Name(), r.Offset, r.Subtrahend)
+	}
+	target, ok := syms[r.Sym]
+	if !ok {
+		return fmt.Errorf("macho: %s+%#x: reference to %q, which is not in the symbol table",
+			s.Name(), r.Offset, r.Sym)
+	}
+	if err := deposit(content, r.Offset, r.Size, r.Addend); err != nil {
+		return fmt.Errorf("macho: %s+%#x: %w", s.Name(), r.Offset, err)
+	}
+	wr.RelocPair(b,
+		machoobj.RelocSpec{
+			Address: uint64(r.Offset),
+			Sym:     minus,
+			Type:    uint8(machocore.ARM64_RELOC_SUBTRACTOR),
+			Length:  machocore.RelocLong,
+		},
+		machoobj.RelocSpec{
+			Address: uint64(r.Offset),
+			Sym:     target,
+			Type:    uint8(machocore.ARM64_RELOC_UNSIGNED),
+			Length:  machocore.RelocLong,
+		})
 	return wr.Err()
 }
 

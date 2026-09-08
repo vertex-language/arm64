@@ -137,6 +137,23 @@ const (
 	RefSecRel32
 	RefSecIdx
 
+	// The distance between two symbols, in a four-byte field: the target
+	// minus the subtrahend, plus whatever the field already holds.
+	//
+	// Not PC-relative, and not an address. A table of these is
+	// position-independent where a table of addresses is not, which is why
+	// every descriptor Swift's runtime reads is built out of them -- a
+	// relative pointer is this with the subtrahend at the field's own
+	// address, and the field pre-loaded with the negative of its offset
+	// inside the symbol that names it.
+	//
+	// A same-section pair needs no relocation and LabelDiff folds one; this
+	// is the kind for a pair the assembler cannot fold, where the target is
+	// in another section or another object entirely. Mach-O expresses it as
+	// SUBTRACTOR followed by UNSIGNED; ELF and COFF have no single entry
+	// for it, and their writers say so.
+	RefDelta32
+
 	numRefKinds
 )
 
@@ -171,6 +188,8 @@ var refNames = [numRefKinds]string{
 
 	RefSize32: "size32", RefSize64: "size64",
 	RefSecRel32: "secrel32", RefSecIdx: "secidx",
+
+	RefDelta32: "delta32",
 }
 
 // String is what ErrRefKind names when a writer refuses one.
@@ -196,7 +215,7 @@ func (k RefKind) Size() int {
 	switch k {
 	case RefAbs64, RefPrel64, RefSize64:
 		return 8
-	case RefAbs32, RefPrel32, RefSize32, RefSecRel32:
+	case RefAbs32, RefPrel32, RefSize32, RefSecRel32, RefDelta32:
 		return 4
 	case RefAbs16, RefPrel16, RefSecIdx:
 		return 2
@@ -265,4 +284,9 @@ type Reference struct {
 	Sym    string
 	Kind   RefKind
 	Addend int64 // logical addend, never adjusted for the field
+
+	// Subtrahend is what is taken away from Sym, for the one kind that
+	// names two symbols: RefDelta32 is Sym minus this. Empty for every
+	// other kind.
+	Subtrahend string
 }
