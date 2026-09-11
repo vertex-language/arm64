@@ -58,6 +58,10 @@ var relocTypes = map[obj.RefKind]relocForm{
 	// descriptor instead of a GOT entry.
 	obj.RefAdrTlvPage21: {machocore.ARM64_RELOC_TLVP_LOAD_PAGE21, true, true},
 	obj.RefLdTlvLo12:    {machocore.ARM64_RELOC_TLVP_LOAD_PAGEOFF12, false, true},
+
+	// The address of a GOT slot, as a distance from the field. An
+	// exception table's type-info entries are these.
+	obj.RefGotPrel32: {machocore.ARM64_RELOC_POINTER_TO_GOT, true, true},
 }
 
 // writeRelocs translates one section's holes into relocation entries.

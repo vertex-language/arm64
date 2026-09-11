@@ -154,6 +154,17 @@ const (
 	// for it, and their writers say so.
 	RefDelta32
 
+	// The distance from this field to the GOT entry for a symbol, in a
+	// four-byte field.
+	//
+	// Not an address of the symbol and not a load through the GOT: the
+	// value is where the linker put the slot. An exception table is what
+	// needs it -- the type-info entries of a __gcc_except_tab are
+	// pc-relative offsets to GOT slots, because the class a @catch names
+	// may live in another image and a data section cannot hold a
+	// relocated pointer into one. Mach-O calls it ARM64_RELOC_POINTER_TO_GOT.
+	RefGotPrel32
+
 	numRefKinds
 )
 
@@ -189,7 +200,8 @@ var refNames = [numRefKinds]string{
 	RefSize32: "size32", RefSize64: "size64",
 	RefSecRel32: "secrel32", RefSecIdx: "secidx",
 
-	RefDelta32: "delta32",
+	RefDelta32:   "delta32",
+	RefGotPrel32: "got-prel32",
 }
 
 // String is what ErrRefKind names when a writer refuses one.
@@ -215,7 +227,7 @@ func (k RefKind) Size() int {
 	switch k {
 	case RefAbs64, RefPrel64, RefSize64:
 		return 8
-	case RefAbs32, RefPrel32, RefSize32, RefSecRel32, RefDelta32:
+	case RefAbs32, RefPrel32, RefSize32, RefSecRel32, RefDelta32, RefGotPrel32:
 		return 4
 	case RefAbs16, RefPrel16, RefSecIdx:
 		return 2
@@ -238,7 +250,8 @@ func (k RefKind) PCRel() bool {
 	case RefPrel64, RefPrel32, RefPrel16,
 		RefCall26, RefJump26, RefCondBr19, RefTstBr14,
 		RefAdrPrel21, RefAdrPage21, RefAdrGotPage21,
-		RefTlsGdAdrPage21, RefTlsIeAdrGottprelPage21:
+		RefTlsGdAdrPage21, RefTlsIeAdrGottprelPage21,
+		RefGotPrel32:
 		return true
 	}
 	return false

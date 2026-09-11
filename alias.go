@@ -82,6 +82,9 @@ const (
 	RefSize64   = obj.RefSize64
 	RefSecRel32 = obj.RefSecRel32
 	RefSecIdx   = obj.RefSecIdx
+
+	RefDelta32   = obj.RefDelta32
+	RefGotPrel32 = obj.RefGotPrel32
 )
 
 // The error sentinels. errors.Is works against every one of them, and the
