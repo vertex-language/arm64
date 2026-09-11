@@ -238,7 +238,18 @@ func (s *Section) Data(b []byte) {
 // The default kind is RefAbs64 — a plain pointer, the only reading a data
 // hole with no instruction around it has. Naming a different kind is for a
 // writer-specific layout, such as a COFF .pdata entry.
-func (s *Section) Ref(sym string, kind ...obj.RefKind) {
+func (s *Section) Ref(sym string, kind ...obj.RefKind) { s.RefAt(sym, 0, kind...) }
+
+// RefAt is Ref with an addend: the reference names sym plus a constant.
+//
+// Only the absolute data kinds carry one here. Every other kind names a field
+// inside an instruction, where an addend has to travel in a relocation entry
+// of its own — ARM64_RELOC_ADDEND on Mach-O — which the writers say they do
+// not emit; a caller that asks for one gets the writer's refusal by name
+// rather than a silently dropped offset. An absolute pointer is different:
+// its addend is folded into the field, which is where every container's
+// unsigned relocation reads one from.
+func (s *Section) RefAt(sym string, addend int64, kind ...obj.RefKind) {
 	if !s.ok() {
 		return
 	}
@@ -252,7 +263,7 @@ func (s *Section) Ref(sym string, kind ...obj.RefKind) {
 	}
 	s.refs = append(s.refs, obj.Reference{
 		Offset: len(s.buf), Size: size, PCRel: k.PCRel(),
-		Sym: sym, Kind: k,
+		Sym: sym, Kind: k, Addend: addend,
 	})
 	s.buf = append(s.buf, make([]byte, size)...)
 }
