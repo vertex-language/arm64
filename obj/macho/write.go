@@ -39,7 +39,15 @@ type Options struct {
 	// SDK is the SDK version the object was built against. Optional.
 	SDK string
 
-	// Subsections sets MH_SUBSECTIONS_VIA_SYMBOLS.
+	// Subsections sets MH_SUBSECTIONS_VIA_SYMBOLS, which says the sections
+	// may be cut at their symbols.
+	//
+	// Set it for anything with unwind tables in it. Without it a linker
+	// cannot see where one function ends and the next begins, and
+	// __unwind_info's sentinel — the entry that says how far the last
+	// function reaches — lands at the start of the last function instead
+	// of past it. An exception thrown through that function then finds no
+	// unwind information and the process terminates.
 	Subsections bool
 
 	// Sections gives a segment and a name to a section this package has no
