@@ -312,6 +312,21 @@ r.LabelRef("case_3")       // 8-byte hole, patched at Finalize
 
 `Offset()` is the current end of the section: the offset the next word will land at, the value a `Label` placed now would name. It is exported because those tables are yours to build, and building them requires knowing where you are.
 
+### COMDAT
+
+A section the linker keeps once, however many objects define it, is a `ComdatSection`, elected on a symbol the section defines:
+
+```go
+f := m.ComdatSection(".text", arm64.Text, "__ZN6Widget3getEv")
+f.Label("__ZN6Widget3getEv", arm64.Global, arm64.Func)
+// ... the body
+f.EndLabel("__ZN6Widget3getEv")
+
+eh := m.AssociativeSection(".rodata", arm64.ROData, f)   // lives or dies with f
+```
+
+Every call makes a *new* section, whatever the name: an inline function, a virtual table or a template instance is its own section so that a duplicate can be discarded without taking anything else with it. Such a section is never found by `SectionNamed`, and `Finalize` refuses one elected on a symbol it does not define. It is the same surface as amd64's, and the writers translate it the same three ways: a COMDAT section with `SelectAny` in COFF, a `GRP_COMDAT` group in ELF, and in Mach-O no section at all — the bytes fold into the ordinary section of the same placement at the next aligned offset and the leader becomes a weak definition, which ld64 coalesces by. `obj/macho` proves that last one by linking two objects that both define the function.
+
 ## Memory operands
 
 One constructor per access width, refined by chain methods that keep the width's type:
@@ -498,7 +513,7 @@ A `RefKind` a container has no relocation for is `ErrRefKind` from that writer, 
 - **No pointer authentication or branch-target-identification instruction support.** `PAuth` and `BTI` exist as features a module can gate on, but `PACIASP`, `AUTIASP`, `BTI c`, and the rest of that family are not in the table — a module built with those features enabled gates nothing yet, because nothing gated needs them.
 - **No SVE, SME, or Advanced SIMD.** See above. The `S`, `D` and `Q` scalar views have instructions now; `H` and `B` do not, half precision being a separate `ftype` and a separate feature, and every SIMD-with-arrangement form remains a register type with nothing to reach it.
 - **The atomics are the sequentially consistent ones.** `LDAR`/`STLR`, the four exclusive pairs, and the LSE family's acquire-release variants are declared; the relaxed, acquire-only and release-only spellings of the LSE forms (`LDADD`, `LDADDA`, `LDADDL` beside `LDADDAL`, and so on for each) are not. Every one is a two-bit change to a declared row, and none is there because nothing selects it yet — a row nothing selects is a row nothing tests. The exclusive pairs make every atomic expressible at any ordering regardless, LSE being the one-instruction form of the loop rather than the only way to write it.
-- **No cross-section symbol differences and no COMDAT-equivalent section grouping.** Same gaps as the other two architectures in this tree, for the same reasons: a same-section `LabelDiff` (not yet ported here — see below) needs no relocation and covers the common case; the cross-section case is a shared-`obj`-vocabulary change that should be made once, deliberately, for all three architectures together.
+- **No cross-section symbol differences.** Same gap as the other two architectures in this tree, for the same reasons: a same-section `LabelDiff` (not yet ported here — see below) needs no relocation and covers the common case; the cross-section case is a shared-`obj`-vocabulary change that should be made once, deliberately, for all three architectures together.
 - **`LabelDiff` and `Ascii`/`Asciz` byte-level table-building helpers exist on the other two architectures in this tree and are not yet on this one's `Section`.** The underlying mechanism — a same-section fixup with no relocation — is already how `foldLabel` resolves a branch; extending it to a plain difference of two labels is a small, well-understood addition rather than a design question.
 - **No disassembler.** This module writes bytes. Reading them back is `elf/obj`, `pe/coff`, and `macho/obj`, which is where the writer tests get the other half of their round trip.
 - **A nonzero `Reference.Addend` on an ADRP-family kind is `ErrRefKind` from `obj/macho`.** Expressing one needs a preceding `ARM64_RELOC_ADDEND` entry — `macho/obj.Writer.RelocPair` supports emitting the pair structurally, but this writer does not build one yet. `RefAbs64`/`RefAbs32`/`RefAbs16` are unaffected: `ARM64_RELOC_UNSIGNED` takes an implicit addend the same way it does on amd64.

@@ -177,18 +177,24 @@ func newSection(wr *machoobj.Writer, s *obj.Section, opt Options) (*machoobj.Sec
 }
 
 // writeContents deposits every addend and hands the section its bytes.
-func writeContents(wr *machoobj.Writer, b *machoobj.SectionBuilder, s *obj.Section, syms map[string]machoobj.SymRef) error {
+func writeContents(wr *machoobj.Writer, p place, s *obj.Section, syms map[string]machoobj.SymRef) error {
+	b := p.b
 	if b.Zerofill() {
 		if len(s.Refs()) > 0 {
 			return fmt.Errorf("macho: %s is zerofill and has no bytes to hold %d relocation addends",
 				s.Name(), len(s.Refs()))
 		}
-		b.Grow(uint64(s.Size()))
+		b.Grow(p.offset + uint64(s.Size()) - b.Len())
 		return wr.Err()
 	}
 
+	// A folded section starts at its offset; the gap is alignment.
+	if have := b.Len(); have < p.offset {
+		b.Zero(int(p.offset - have))
+	}
+
 	content := s.Bytes()
-	if err := writeRelocs(wr, b, s, content, syms); err != nil {
+	if err := writeRelocs(wr, b, p.offset, s, content, syms); err != nil {
 		return err
 	}
 	if _, err := b.Write(content); err != nil {

@@ -26,6 +26,11 @@ type Section struct {
 
 	labels map[string]int
 
+	// comdat is the symbol this section is elected on, and associated
+	// the section it follows out of the link; see Module.ComdatSection.
+	comdat     string
+	associated *Section
+
 	// pending holds every fixup a typed helper or Emit left behind, in
 	// placement order, until resolve folds or promotes each one at Finalize.
 	pending []pending
@@ -67,6 +72,10 @@ func (s *Section) Module() *Module { return s.m }
 func (s *Section) Kind() SectionKind { return s.kind }
 func (s *Section) Name() string      { return s.name }
 func (s *Section) Index() int        { return s.index }
+
+// Comdat is the symbol this section is elected on, or empty for an
+// ordinary section. See Module.ComdatSection.
+func (s *Section) Comdat() string { return s.comdat }
 
 // Offset is the current end of the section: the offset the next word will
 // land at, and the value a Label placed now would name.
