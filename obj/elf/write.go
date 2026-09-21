@@ -131,7 +131,7 @@ func Write(w io.Writer, o *obj.Object, opts ...Options) error {
 	}
 
 	for i, s := range secs {
-		if err := writeRelocs(wr, builders[i], s, syms); err != nil {
+		if err := writeRelocs(wr, builders[i], o, i, s, syms); err != nil {
 			return err
 		}
 	}

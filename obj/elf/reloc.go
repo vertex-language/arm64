@@ -66,8 +66,38 @@ var relocTypes = map[obj.RefKind]elfcore.RelocAArch64{
 // section bytes — that is the RELA half of the bargain, and the reason this
 // writer can hand an object's own bytes straight through while a REL
 // container would have to copy.
-func writeRelocs(wr *elfobj.Writer, b *elfobj.SectionBuilder, s *obj.Section, syms map[string]elfobj.SymRef) error {
+func writeRelocs(wr *elfobj.Writer, b *elfobj.SectionBuilder, o *obj.Object, index int, s *obj.Section, syms map[string]elfobj.SymRef) error {
 	for _, r := range s.Refs() {
+		// A symbol difference, `to - from + addend`, whose subtrahend is
+		// defined in this same section -- a relative pointer measured
+		// from the object holding it -- is PC-relative: from is a fixed
+		// distance behind the field, so it is R_AARCH64_PREL32 with that
+		// distance added back. ELF has no relocation for any other.
+		if r.Kind == obj.RefDelta32 {
+			from, ok := o.Symbol(r.Subtrahend)
+			if !ok || from.Section != index {
+				return &obj.Error{
+					Sentinel: obj.ErrRefKind,
+					Arch:     obj.ArchARM64,
+					Section:  s.Name(),
+					Offset:   r.Offset,
+					Context:  fmt.Sprintf("%s reference to %q minus %q", r.Kind, r.Sym, r.Subtrahend),
+					Notes:    []string{"AArch64 ELF can subtract only a symbol in the field's own section"},
+				}
+			}
+			sym, ok := syms[r.Sym]
+			if !ok {
+				return fmt.Errorf("elf: %s+%#x: reference to %q, which is not in the symbol table",
+					s.Name(), r.Offset, r.Sym)
+			}
+			wr.Reloc(b, elfobj.RelocSpec{
+				Offset: uint64(r.Offset),
+				Sym:    sym,
+				Type:   uint32(elfcore.R_AARCH64_PREL32),
+				Addend: r.Addend + int64(r.Offset-from.Offset),
+			})
+			continue
+		}
 		typ, ok := relocTypes[r.Kind]
 		if !ok {
 			return &obj.Error{
