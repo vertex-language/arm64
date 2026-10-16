@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/vertex-language/arm64/feature"
+	"github.com/vertex-language/arm64/reg"
 )
 
 // The fluent builder table rows are written with.
@@ -35,6 +36,32 @@ func (f *Form) SrcDst(c Class, fld Field) *Form { return f.slot(c, RoleSrcDst, f
 
 // Imm adds an immediate operand.
 func (f *Form) Imm(fld Field) *Form { return f.slot(ClassImm, RoleSrc, fld) }
+
+// vec is a ClassVArr slot of one arrangement.
+func (f *Form) vec(a reg.Arrangement, r Role, fld Field) *Form {
+	f.slot(ClassVArr, r, fld)
+	f.Slots[len(f.Slots)-1].Arr = a
+	return f
+}
+
+// DstV, SrcV and SrcDstV are Dst, Src and SrcDst for a vector register of
+// arrangement a: v0.4s, which no other arrangement satisfies.
+func (f *Form) DstV(a reg.Arrangement, fld Field) *Form    { return f.vec(a, RoleDest, fld) }
+func (f *Form) SrcV(a reg.Arrangement, fld Field) *Form    { return f.vec(a, RoleSrc, fld) }
+func (f *Form) SrcDstV(a reg.Arrangement, fld Field) *Form { return f.vec(a, RoleSrcDst, fld) }
+
+// lane is a ClassVLane slot: the register in fld and the index in idx.
+func (f *Form) lane(e reg.Elem, r Role, fld, idx Field) *Form {
+	f.slot(ClassVLane, r, fld)
+	s := &f.Slots[len(f.Slots)-1]
+	s.Elem, s.Index = e, idx
+	return f
+}
+
+// SrcLane and DstLane are one element of a vector register, v1.s[2]: its
+// register in fld and its index in idx.
+func (f *Form) SrcLane(e reg.Elem, fld, idx Field) *Form { return f.lane(e, RoleSrc, fld, idx) }
+func (f *Form) DstLane(e reg.Elem, fld, idx Field) *Form { return f.lane(e, RoleSrcDst, fld, idx) }
 
 // Kind states the arithmetic the most recently appended slot's immediate goes
 // through — which range it must fall in, what it is scaled or rotated by, and

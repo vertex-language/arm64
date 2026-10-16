@@ -83,6 +83,7 @@ const (
 	ElemH         // 16-bit
 	ElemS         // 32-bit
 	ElemD         // 64-bit
+	ElemQ         // 128-bit: PMULL's product, v0.1q
 )
 
 // Bits is the width of one element, or 0 for ElemNone.
@@ -96,6 +97,8 @@ func (e Elem) Bits() uint16 {
 		return 32
 	case ElemD:
 		return 64
+	case ElemQ:
+		return 128
 	}
 	return 0
 }
@@ -118,6 +121,7 @@ const (
 	V4S
 	V1D
 	V2D
+	V1Q
 )
 
 var arrTable = [...]struct {
@@ -132,6 +136,7 @@ var arrTable = [...]struct {
 	V4S:  {ElemS, 4},
 	V1D:  {ElemD, 1},
 	V2D:  {ElemD, 2},
+	V1Q:  {ElemQ, 1},
 }
 
 // Elem is the width of one lane.

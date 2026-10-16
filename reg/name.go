@@ -58,6 +58,8 @@ func (e Elem) String() string {
 		return "s"
 	case ElemD:
 		return "d"
+	case ElemQ:
+		return "q"
 	}
 	return ""
 }

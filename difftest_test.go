@@ -478,6 +478,8 @@ func diffCases() []diffCase {
 		{"ldrsb x0,[x1,4]", "ldrsb x0, [x1, #4]", func(t *arm64.Section) { t.LdrsbImm64(x0, arm64.Mem8(x1).Off(4)) }},
 		{"ldrsh w0,[x1,4]", "ldrsh w0, [x1, #4]", func(t *arm64.Section) { t.LdrshImm32(w0, arm64.Mem16(x1).Off(4)) }},
 		{"ldrsh x0,[x1,4]", "ldrsh x0, [x1, #4]", func(t *arm64.Section) { t.LdrshImm64(x0, arm64.Mem16(x1).Off(4)) }},
+		{"ldur q0,[x1,-16]", "ldur q0, [x1, #-16]", func(t *arm64.Section) { t.LdurImmQ(q0, arm64.Mem128(x1).Off(-16)) }},
+		{"stur q0,[x1,-32]", "stur q0, [x1, #-32]", func(t *arm64.Section) { t.SturImmQ(q0, arm64.Mem128(x1).Off(-32)) }},
 	}
 }
 

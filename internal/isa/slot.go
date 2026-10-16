@@ -1,6 +1,10 @@
 package isa
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/vertex-language/arm64/reg"
+)
 
 // Field is where an operand's bits land in the 32-bit word.
 //
@@ -275,6 +279,18 @@ const (
 	ImmBitfieldLsbNeg
 	ImmBitfieldWidthM1
 
+	// ImmVecShl and ImmVecShr are a vector shift's immh:immb, which says
+	// the element width and the amount at once: esize + n for a left
+	// shift (0 <= n < esize), 2*esize - n for a right one (1 <= n <=
+	// esize). esize is the narrowest element the form's vectors have,
+	// which is the destination's for SHRN and the source's for USHLL.
+	ImmVecShl
+	ImmVecShr
+
+	// ImmVecByteMask is MOVI's 64-bit form: a value whose every byte is
+	// 0x00 or 0xff, written as one bit per byte, a:b:c:d:e:f:g:h.
+	ImmVecByteMask
+
 	immKindCount
 )
 
@@ -323,6 +339,12 @@ func (k ImmKind) String() string {
 		return "bitfieldlsbneg"
 	case ImmBitfieldWidthM1:
 		return "bitfieldwidthm1"
+	case ImmVecShl:
+		return "vecshl"
+	case ImmVecShr:
+		return "vecshr"
+	case ImmVecByteMask:
+		return "vecbytemask"
 	}
 	return "none"
 }
@@ -370,6 +392,17 @@ type Slot struct {
 
 	// Default is the field value used when an Optional slot is omitted.
 	Default uint64
+
+	// Arr is the arrangement a ClassVArr slot takes: v0.4s and v0.16b are
+	// different encodings of ADD, told apart by size and Q bits the row
+	// pins, so a slot names the one its row encodes and takes no other.
+	Arr reg.Arrangement
+
+	// Elem and Index are a ClassVLane slot's: the element width its row
+	// encodes, and the field the lane's index goes in -- imm5's upper bits
+	// for UMOV and INS, imm2 for SM3TT1A, wherever the row puts it.
+	Elem  reg.Elem
+	Index Field
 }
 
 // IsImm reports whether this slot takes an immediate.
@@ -385,6 +418,12 @@ func (s Slot) IsImm() bool { return s.Class == ClassImm }
 // than a naming accident.
 func (s Slot) Signature() string {
 	out := s.Class.String()
+	if s.Arr != reg.ArrNone {
+		out += "." + s.Arr.String()
+	}
+	if s.Elem != reg.ElemNone {
+		out += "." + s.Elem.String() + "[]"
+	}
 	if s.Imm != ImmNone && s.Imm != ImmPlain {
 		out += ":" + s.Imm.String()
 	}

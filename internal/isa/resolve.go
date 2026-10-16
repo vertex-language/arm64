@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/vertex-language/arm64/feature"
+	"github.com/vertex-language/arm64/reg"
 )
 
 // UnknownError is a mnemonic no form declares.
@@ -118,6 +119,12 @@ func accepts(f *Form, args []Arg) bool {
 		}
 		s := f.Slots[si]
 		if !s.Class.Match(a) {
+			return false
+		}
+		if s.Arr != reg.ArrNone && a.Arr != s.Arr {
+			return false
+		}
+		if s.Elem != reg.ElemNone && a.Elem != s.Elem {
 			return false
 		}
 		si++

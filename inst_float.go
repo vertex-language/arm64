@@ -198,10 +198,10 @@ func (s *Section) FmovXToD(rd reg.D, rn reg.X) { s.inst(fmovXToD, rd, rn) }
 // ---- Load and store --------------------------------------------------------
 
 var (
-	ldrImmS, ldrImmD, ldrImmQ = form("LdrImmS"), form("LdrImmD"), form("LdrImmQ")
-	strImmS, strImmD, strImmQ = form("StrImmS"), form("StrImmD"), form("StrImmQ")
-	ldurImmS, ldurImmD        = form("LdurImmS"), form("LdurImmD")
-	sturImmS, sturImmD        = form("SturImmS"), form("SturImmD")
+	ldrImmS, ldrImmD, ldrImmQ    = form("LdrImmS"), form("LdrImmD"), form("LdrImmQ")
+	strImmS, strImmD, strImmQ    = form("StrImmS"), form("StrImmD"), form("StrImmQ")
+	ldurImmS, ldurImmD, ldurImmQ = form("LdurImmS"), form("LdurImmD"), form("LdurImmQ")
+	sturImmS, sturImmD, sturImmQ = form("SturImmS"), form("SturImmD"), form("SturImmQ")
 )
 
 // LdrImmS emits LDR St, [Xn|SP{, #imm}], imm in units of the access width.
@@ -218,3 +218,5 @@ func (s *Section) LdurImmS(rt reg.S, m Mem) { s.inst(ldurImmS, rt, m) }
 func (s *Section) LdurImmD(rt reg.D, m Mem) { s.inst(ldurImmD, rt, m) }
 func (s *Section) SturImmS(rt reg.S, m Mem) { s.inst(sturImmS, rt, m) }
 func (s *Section) SturImmD(rt reg.D, m Mem) { s.inst(sturImmD, rt, m) }
+func (s *Section) LdurImmQ(rt reg.Q, m Mem) { s.inst(ldurImmQ, rt, m) }
+func (s *Section) SturImmQ(rt reg.Q, m Mem) { s.inst(sturImmQ, rt, m) }

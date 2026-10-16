@@ -192,7 +192,7 @@ var arrNames = map[string]reg.Arrangement{
 	"8b": reg.V8B, "16b": reg.V16B,
 	"4h": reg.V4H, "8h": reg.V8H,
 	"2s": reg.V2S, "4s": reg.V4S,
-	"1d": reg.V1D, "2d": reg.V2D,
+	"1d": reg.V1D, "2d": reg.V2D, "1q": reg.V1Q,
 }
 
 // parseImm reads what follows a `#`.

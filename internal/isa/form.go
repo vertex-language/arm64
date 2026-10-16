@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/vertex-language/arm64/feature"
+	"github.com/vertex-language/arm64/reg"
 )
 
 // Attr is a property of a form that its consumers need and that the slots do
@@ -160,6 +161,12 @@ func (f *Form) Signature() string {
 	for _, s := range f.Slots {
 		b.WriteByte(' ')
 		b.WriteString(s.Class.String())
+		if s.Arr != reg.ArrNone {
+			b.WriteString("." + s.Arr.String())
+		}
+		if s.Elem != reg.ElemNone {
+			b.WriteString("." + s.Elem.String() + "[]")
+		}
 		if s.Optional {
 			b.WriteByte('?')
 		}

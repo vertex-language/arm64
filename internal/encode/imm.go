@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/vertex-language/arm64/internal/isa"
+	"github.com/vertex-language/arm64/reg"
 	"github.com/vertex-language/arm64/operand"
 )
 
@@ -53,6 +54,32 @@ func encodeImm(f *isa.Form, i int, s isa.Slot, v val, explicitShift bool, prev i
 			return immResult{value: truncS(v.imm, bits)}, nil
 		}
 		return immResult{}, &RangeError{f, i, v.imm, plural(bits) + " unsigned, or signed"}
+
+	case isa.ImmVecShl, isa.ImmVecShr:
+		e := uint64(vecElemBits(f))
+		if s.Imm == isa.ImmVecShl {
+			if v.imm < 0 || uint64(v.imm) >= e {
+				return immResult{}, &RangeError{f, i, v.imm, "a shift from 0 to " + strconv.Itoa(int(e)-1)}
+			}
+			return immResult{value: e + uint64(v.imm)}, nil
+		}
+		if v.imm < 1 || uint64(v.imm) > e {
+			return immResult{}, &RangeError{f, i, v.imm, "a shift from 1 to " + strconv.Itoa(int(e))}
+		}
+		return immResult{value: 2*e - uint64(v.imm)}, nil
+
+	case isa.ImmVecByteMask:
+		var bits uint64
+		for b := 0; b < 8; b++ {
+			switch byte(v.uimm >> (8 * b)) {
+			case 0:
+			case 0xff:
+				bits |= 1 << b
+			default:
+				return immResult{}, &RangeError{f, i, v.imm, "a value whose every byte is 0x00 or 0xff"}
+			}
+		}
+		return immResult{value: bits}, nil
 
 	case isa.ImmRaw32:
 		if v.uimm > 0xffffffff {
@@ -274,4 +301,21 @@ func plural(bits uint8) string {
 		return "1 bit"
 	}
 	return "" + strconv.Itoa(int(bits)) + " bits"
+}
+
+// vecElemBits is the narrowest element of a form's vector operands: what a
+// vector shift's amount is measured against.
+func vecElemBits(f *isa.Form) uint16 {
+	n := uint16(0)
+	for _, s := range f.Slots {
+		if s.Arr != reg.ArrNone {
+			if b := s.Arr.Elem().Bits(); n == 0 || b < n {
+				n = b
+			}
+		}
+	}
+	if n == 0 {
+		return 64
+	}
+	return n
 }

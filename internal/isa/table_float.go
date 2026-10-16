@@ -202,5 +202,9 @@ func init() {
 			Src(ClassS, Rt).Mem(32, Rn, Imm9).Kind(ImmUnscaled).Name("SturImmS"),
 		L("stur", 0xfc000000, 0xffe00c00).
 			Src(ClassD, Rt).Mem(64, Rn, Imm9).Kind(ImmUnscaled).Name("SturImmD"),
+		L("ldur", 0x3cc00000, 0xffe00c00).
+			Dst(ClassQ, Rt).Mem(128, Rn, Imm9).Kind(ImmUnscaled).Name("LdurImmQ"),
+		L("stur", 0x3c800000, 0xffe00c00).
+			Src(ClassQ, Rt).Mem(128, Rn, Imm9).Kind(ImmUnscaled).Name("SturImmQ"),
 	)
 }

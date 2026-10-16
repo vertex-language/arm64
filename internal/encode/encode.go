@@ -6,6 +6,7 @@ import (
 	"github.com/vertex-language/arm64/feature"
 	"github.com/vertex-language/arm64/internal/isa"
 	"github.com/vertex-language/arm64/operand"
+	"github.com/vertex-language/arm64/reg"
 )
 
 // Opts is what an encode call needs that is not an operand.
@@ -106,10 +107,16 @@ func encodeForm(f *isa.Form, ops []val, opts Opts) (uint32, []Fixup, error) {
 				return 0, nil, &OperandError{f, oi, s.Class, v.raw}
 			}
 			n, why := regNum(s.Class, v.reg)
+			if why == "" {
+				why = vectorShape(s, v.reg)
+			}
 			if why != "" {
 				return 0, nil, &RegisterError{f, oi, s.Class, v.reg.String(), why}
 			}
 			word = place(word, s.Field, n)
+			if l, ok := v.reg.(reg.VLane); ok && s.Elem != reg.ElemNone {
+				word = place(word, s.Index, uint64(l.Index))
+			}
 			oi++
 
 		// ClassSys is not s.Class.Reg(): class.go gives it reg.FileNone on
@@ -576,4 +583,26 @@ func targetScale(role operand.AddrRole, f *isa.Form) uint8 {
 		return 2 // word-aligned
 	}
 	return 0
+}
+
+// vectorShape is why a vector register does not fit a slot that names an
+// arrangement or a lane, or "" where it does: the row's size and Q bits are
+// pinned, so v0.8h in a .4s slot would encode as v0.4s without a word.
+func vectorShape(s isa.Slot, r reg.Reg) string {
+	switch {
+	case s.Arr != reg.ArrNone:
+		v, ok := r.(reg.Vec)
+		if !ok || v.A != s.Arr {
+			return "this form takes ." + s.Arr.String()
+		}
+	case s.Elem != reg.ElemNone:
+		l, ok := r.(reg.VLane)
+		if !ok || l.E != s.Elem {
+			return "this form takes a ." + s.Elem.String() + " lane"
+		}
+		if !l.Valid() || uint64(l.Index) >= 1<<s.Index.Width() {
+			return "the lane index is out of range"
+		}
+	}
+	return ""
 }
