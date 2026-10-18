@@ -448,7 +448,13 @@ func (s *Section) promote(p pending, t operand.SymRef) error {
 	// a *global* in this section must stay a relocation, because another
 	// object may interpose a different definition and the linker has to be
 	// left able to redirect it. GNU as draws the line in exactly this place.
-	if p.fx.Role == operand.RoleDirect && s.m.symbols[i].defined &&
+	//
+	// Under WithAtoms a local symbol is an atom boundary too, and the
+	// distance to it is the linker's to decide: folded, a call or tail call
+	// from an atom that is kept lands wherever the target's bytes used to
+	// be. A conditional branch still folds -- Mach-O has no relocation for
+	// one, and its target is a label inside the same function.
+	if !(s.m.atoms && atomCrossing(p.mnem, p.fx)) && p.fx.Role == operand.RoleDirect && s.m.symbols[i].defined &&
 		s.m.symbols[i].binding == Local && s.m.symbols[i].sec == s.index {
 		if _, here := s.labels[t.Name]; here {
 			q := p
@@ -465,6 +471,13 @@ func (s *Section) promote(p pending, t operand.SymRef) error {
 		Sym: t.Name, Kind: kind, Addend: p.fx.Addend + t.Addend,
 	})
 	return nil
+}
+
+// atomCrossing reports whether a reference is one that goes from one
+// function to another and that Mach-O can relocate: b and bl.
+func atomCrossing(mnem string, fx encode.Fixup) bool {
+	k, err := refKindFor(mnem, fx)
+	return err == nil && (k == obj.RefCall26 || k == obj.RefJump26)
 }
 
 func fitsSigned(v int64, bits uint8) bool {

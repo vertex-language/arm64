@@ -25,6 +25,11 @@ type Module struct {
 
 	externs map[string]bool
 
+	// atoms says every symbol will begin an atom of its own, which a
+	// dead-stripping linker may keep, drop, or move apart from its
+	// neighbours (WithAtoms).
+	atoms bool
+
 	err error
 
 	done     bool
@@ -49,6 +54,15 @@ type Option func(*Module)
 // depending on when it ran.
 func WithFeatures(s FeatureSet) Option {
 	return func(m *Module) { m.features = s }
+}
+
+// WithAtoms says the object will be cut at its symbols, as Mach-O's
+// MH_SUBSECTIONS_VIA_SYMBOLS cuts it: every symbol begins an atom a linker
+// may drop or move. A reference from one symbol to another is then a
+// distance only the linker knows, so none is folded, local or not; only a
+// label that begins no atom still is.
+func WithAtoms() Option {
+	return func(m *Module) { m.atoms = true }
 }
 
 // NewModule returns an empty module. The default feature set is Armv8-A, the
